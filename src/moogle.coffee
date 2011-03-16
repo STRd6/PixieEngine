@@ -112,22 +112,24 @@ Moogle = (I) ->
             laserEndpoint = nearestHit
             object = nearestHit.object
 
-        if laserEndpoint
-          engine.add
-            class: "Emitter"
-            duration: 10
-            sprite: Sprite.EMPTY
-            velocity: Point(0, 0)
-            particleCount: 2
-            batchSize: 5
-            x: laserEndpoint.x
-            y: laserEndpoint.y
-            generator:
-              color: "rgba(255, 255, 255, 0.7)"  
-              duration: 3
-              maxSpeed: 5
-              velocity: (n) ->
-                Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+          if laserEndpoint
+            engine.add
+              class: "Emitter"
+              duration: 10
+              sprite: Sprite.EMPTY
+              velocity: Point(0, 0)
+              particleCount: 2
+              batchSize: 5
+              x: laserEndpoint.x
+              y: laserEndpoint.y
+              generator:
+                color: "rgba(255, 255, 255, 0.7)"  
+                duration: 3
+                maxSpeed: 5
+                velocity: (n) ->
+                  Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+          else
+            laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
         if object?.I.wizard
           killWizard object
