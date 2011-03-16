@@ -23,7 +23,13 @@ Engine = (options) ->
     age += 1
  
   canvas = options.canvas || $("<canvas />").powerCanvas()
-    
+  
+  construct = (entityData) ->
+    if entityData.class
+      entityData.class.constantize()(entityData)
+    else
+      GameObject(entityData)
+
   self =
     add: (entityData) ->
       obj = construct entityData
@@ -39,18 +45,15 @@ Engine = (options) ->
     saveState: () ->
       savedState = objects.map (object) ->
         $.extend({}, object.I)
-      log "saved state"
 
     loadState: () ->
       if savedState
         objects = savedState.map (objectData) ->
           construct $.extend({}, objectData)
-      log "loaded state"
 
     reload: () ->
       objects = objects.map (object) ->
         construct object.I
-      log "reloaded!"
 
     play: () ->
       unless intervalId
