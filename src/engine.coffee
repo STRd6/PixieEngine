@@ -35,9 +35,14 @@ Engine = (options) ->
       obj = construct entityData
         
       objects.push obj
-      
+
+    #TODO: This is only used in testing and should be removed when possible
     age: ->
       age
+
+    #TODO: This is a bad idea in case access is attempted during update
+    objects: ->
+      objects
       
     rewind: () ->
       
