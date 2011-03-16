@@ -21,7 +21,7 @@ test "save and restore", ->
 
 asyncTest "Running Engine", ->
   engine = Engine()
-  engine.play()
+  engine.start()
   
   milliseconds = 2000
   

@@ -8,6 +8,7 @@
     intervalId = null
     savedState = null
     age = 0
+    paused = false
     FPS = options.FPS
     
     objects = []
@@ -21,10 +22,11 @@
       objects.invoke("draw", canvas)
       
     step = ->
-      update()
+      unless paused
+        update()
+        age += 1
+
       draw()
-      
-      age += 1
    
     canvas = options.canvas || $("<canvas />").powerCanvas()
     
@@ -64,15 +66,21 @@
         objects = objects.map (object) ->
           construct object.I
   
-      play: () ->
+      start: () ->
         unless intervalId
           intervalId = setInterval(() ->
             step()
           , 1000 / FPS)
         
-      pause: () ->
+      stop: () ->
         clearInterval(intervalId)
         intervalId = null
+        
+      play: ->
+        paused = false
+        
+      pause: ->
+        paused = true
         
       setFramerate: (newFPS) ->
         FPS = newFPS
