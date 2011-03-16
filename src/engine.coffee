@@ -22,7 +22,7 @@ Engine = (options) ->
     
     age += 1
  
-  canvas = $("canvas").powerCanvas()
+  canvas = $("<canvas />").powerCanvas()
   canvas.font("bold 1em consolas, 'Courier New', 'andale mono', 'lucida console', monospace")
     
   self =
