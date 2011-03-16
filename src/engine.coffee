@@ -29,6 +29,9 @@ Engine = (options) ->
         
       objects.push obj
       
+    age: ->
+      age
+      
     rewind: () ->
       
       
