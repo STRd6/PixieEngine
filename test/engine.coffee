@@ -1,6 +1,24 @@
 test "Engine", ->
   ok(Engine)
 
+test "save and restore", ->
+  engine = Engine()
+  
+  engine.add {}
+  engine.add {}
+  
+  equals(engine.objects().length, 2)
+  
+  engine.saveState()
+  
+  engine.add {}
+  
+  equals(engine.objects().length, 3)
+  
+  engine.loadState()
+  
+  equals(engine.objects().length, 2)
+
 asyncTest "Running Engine", ->
   engine = Engine()
   engine.play()
@@ -15,10 +33,3 @@ asyncTest "Running Engine", ->
     start()
   , milliseconds
 
-test "save and restore", ->
-  engine = Engine()
-  
-  engine.add {}
-  engine.add {}
-  
-  
