@@ -11,11 +11,15 @@
     paused = false
     FPS = options.FPS
     
+    queuedObjects = []
     objects = []
   
     update = ->
       objects = objects.select (object) ->
         object.update()
+        
+      objects = objects.concat(queuedObjects)
+      queuedObjects = []
   
     draw = ->
       canvas.fill("#080")
@@ -39,8 +43,11 @@
     self =
       add: (entityData) ->
         obj = construct entityData
-          
-        objects.push obj
+        
+        if intervalId && !paused
+          queuedObjects.push obj
+        else
+          objects.push obj
   
       #TODO: This is only used in testing and should be removed when possible
       age: ->
@@ -56,6 +63,23 @@
       collides: (bounds) ->
         objects.inject false, (collided, object) ->
           collided || (object.solid() && object.collides(bounds))
+          
+      rayCollides: (source, direction) ->
+        hits = objects.map (object) ->
+          hit = object.solid() && Collision.rayRectangle(source, direction, object.centeredBounds())
+          hit.object = object if hit
+          
+          hit
+          
+        nearestDistance = Infinity
+        nearestHit = null
+    
+        hits.each (hit) ->
+          if hit && (d = hit.distance(source)) < nearestDistance
+            nearestDistance = d
+            nearestHit = hit
+            
+        nearestHit
         
       rewind: () ->
         
