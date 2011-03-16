@@ -123,7 +123,7 @@ Moogle = (I) ->
               x: laserEndpoint.x
               y: laserEndpoint.y
               generator:
-                color: "rgba(255, 255, 255, 0.7)"  
+                color: "rgba(255, 0, 255, 0.7)"  
                 duration: 3
                 maxSpeed: 5
                 velocity: (n) ->
