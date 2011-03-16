@@ -50,6 +50,13 @@
       objects: ->
         objects
         
+      eachObject: (iterator) ->
+        objects.each iterator
+        
+      collides: (bounds) ->
+        objects.inject false, (collided, object) ->
+          collided || (object.solid() && object.collides(bounds))
+        
       rewind: () ->
         
         
