@@ -15,3 +15,10 @@ asyncTest "Running Engine", ->
     start()
   , milliseconds
 
+test "save and restore", ->
+  engine = Engine()
+  
+  engine.add {}
+  engine.add {}
+  
+  
