@@ -1,5 +1,14 @@
 test "Engine", ->
   ok(Engine)
+  
+test "play and pause", ->
+  engine = Engine()
+  
+  equal engine.paused(), false
+  engine.pause()
+  equal engine.paused(), true
+  engine.play()
+  equal engine.paused(), false
 
 test "save and restore", ->
   engine = Engine()

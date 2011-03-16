@@ -82,9 +82,12 @@
       pause: ->
         paused = true
         
+      paused: ->
+        paused
+        
       setFramerate: (newFPS) ->
         FPS = newFPS
-        self.pause()
-        self.play()
+        self.stop()
+        self.start()
 )(jQuery)
 
