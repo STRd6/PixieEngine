@@ -1,4 +1,6 @@
 Engine = (options) ->
+  options ||= {}
+
   intervalId = null
   savedState = null
   age = 0
