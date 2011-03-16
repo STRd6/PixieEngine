@@ -64,7 +64,7 @@ Moogle = (I) ->
       I.velocity.y = I.velocity.y.clamp(-I.speed, I.speed)
       I.velocity.x = I.velocity.x.clamp(-I.speed, I.speed)
   
-  physics = PHYSICS.area
+  physics = PHYSICS.arena
     
   self = GameObject(I).extend
     draw: (canvas) ->
