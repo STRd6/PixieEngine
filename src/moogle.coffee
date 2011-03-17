@@ -83,9 +83,11 @@ Moogle = (I) ->
   self = GameObject(I).extend
     draw: (canvas) ->
       if laserEndpoint
+        laserSource = self.centeredBounds()
+        
         5.times ->
           canvas.strokeColor laserColors.rand()
-          canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
+          canvas.drawLine(laserSource.x, laserSource.y, laserEndpoint.x, laserEndpoint.y, 2)
 
       canvas.fillColor I.color
       canvas.fillRect I.x, I.y, I.width, I.height
@@ -122,7 +124,7 @@ Moogle = (I) ->
         laserEndpoint = null
           
         if shootDirection
-          if nearestHit = engine.rayCollides(I, shootDirection)
+          if nearestHit = engine.rayCollides(self.centeredBounds(), shootDirection)
             laserEndpoint = nearestHit
             object = nearestHit.object
 
