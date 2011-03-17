@@ -64,6 +64,19 @@
       objects: ->
         objects
         
+      objectAt: (x, y) ->
+        targetObject = null
+        bounds =
+          x: x
+          y: y
+          width: 1
+          height: 1
+
+        self.eachObject (object) ->
+          targetObject = object if object.collides(bounds)
+
+        return targetObject
+        
       eachObject: (iterator) ->
         objects.each iterator
         
