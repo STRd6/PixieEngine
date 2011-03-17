@@ -1,6 +1,7 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
+    backgroundColor: "#255222"
  
   window.Engine = (options) ->
     options = $.extend({}, defaults, options)
@@ -9,10 +10,14 @@
     savedState = null
     age = 0
     paused = false
-    FPS = options.FPS
     
+    backgroundColor = options.backgroundColor
+    FPS = options.FPS
+
     queuedObjects = []
     objects = []
+
+    cameraTransform = Matrix.IDENTITY
   
     update = ->
       objects = objects.select (object) ->
@@ -22,9 +27,11 @@
       queuedObjects = []
   
     draw = ->
-      canvas.fill("#080")
-      objects.invoke("draw", canvas)
-      
+      canvas.withTransform cameraTransform, (canvas) ->
+        if backgroundColor
+          canvas.fill(backgroundColor)
+        objects.invoke("draw", canvas)
+
     step = ->
       unless paused
         update()
