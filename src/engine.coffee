@@ -1,6 +1,7 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
+    backgroundColor: "#255222"
  
   window.Engine = (options) ->
     options = $.extend({}, defaults, options)
@@ -9,10 +10,14 @@
     savedState = null
     age = 0
     paused = false
-    FPS = options.FPS
     
+    backgroundColor = options.backgroundColor
+    FPS = options.FPS
+
     queuedObjects = []
     objects = []
+
+    cameraTransform = Matrix.IDENTITY
   
     update = ->
       objects = objects.select (object) ->
@@ -22,9 +27,11 @@
       queuedObjects = []
   
     draw = ->
-      canvas.fill("#080")
-      objects.invoke("draw", canvas)
-      
+      canvas.withTransform cameraTransform, (canvas) ->
+        if backgroundColor
+          canvas.fill(backgroundColor)
+        objects.invoke("draw", canvas)
+
     step = ->
       unless paused
         update()
@@ -48,6 +55,8 @@
           queuedObjects.push obj
         else
           objects.push obj
+          
+      construct: construct
   
       #TODO: This is only used in testing and should be removed when possible
       age: ->
@@ -56,6 +65,19 @@
       #TODO: This is a bad idea in case access is attempted during update
       objects: ->
         objects
+        
+      objectAt: (x, y) ->
+        targetObject = null
+        bounds =
+          x: x
+          y: y
+          width: 1
+          height: 1
+
+        self.eachObject (object) ->
+          targetObject = object if object.collides(bounds)
+
+        return targetObject
         
       eachObject: (iterator) ->
         objects.each iterator

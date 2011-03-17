@@ -13,6 +13,10 @@ Moogle = (I) ->
     velocity: Point(0, 0)
     excludedModules: ["Movable"]
 
+  # Cast acceleration and velocity to points
+  I.acceleration = Point(I.acceleration.x, I.acceleration.y)
+  I.velocity = Point(I.velocity.x, I.velocity.y)
+
   jumping = false
   falling = true
   lastDirection = 1
@@ -73,7 +77,7 @@ Moogle = (I) ->
         canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
 
       canvas.fillColor I.color
-      canvas.fillRect I.x, I.y, 16, 16
+      canvas.fillRect I.x, I.y, I.width, I.height
 
   
     before:
@@ -112,22 +116,24 @@ Moogle = (I) ->
             laserEndpoint = nearestHit
             object = nearestHit.object
 
-        if laserEndpoint
-          engine.add
-            class: "Emitter"
-            duration: 10
-            sprite: Sprite.EMPTY
-            velocity: Point(0, 0)
-            particleCount: 2
-            batchSize: 5
-            x: laserEndpoint.x
-            y: laserEndpoint.y
-            generator:
-              color: "rgba(255, 255, 255, 0.7)"  
-              duration: 3
-              maxSpeed: 5
-              velocity: (n) ->
-                Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+          if laserEndpoint
+            engine.add
+              class: "Emitter"
+              duration: 10
+              sprite: Sprite.EMPTY
+              velocity: Point(0, 0)
+              particleCount: 2
+              batchSize: 5
+              x: laserEndpoint.x
+              y: laserEndpoint.y
+              generator:
+                color: "rgba(255, 128, 255, 0.7)"  
+                duration: 3
+                maxSpeed: 5
+                velocity: (n) ->
+                  Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+          else
+            laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
         if object?.I.wizard
           killWizard object
