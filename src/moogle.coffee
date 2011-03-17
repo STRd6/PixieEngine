@@ -83,10 +83,11 @@ Moogle = (I) ->
   self = GameObject(I).extend
     before:
       draw: (canvas) ->
+        laserStart = self.centeredBounds()
         if laserEndpoint
           5.times ->
             canvas.strokeColor laserColors.rand()
-            canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
+            canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
             
       update: ->
         if engine.collides(self.bounds(0, 1))
