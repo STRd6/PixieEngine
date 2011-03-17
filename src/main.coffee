@@ -22,6 +22,11 @@ engine.start()
 
 developer = false
 
+objectToUpdate = null
+window.updateObjectProperties = (newProperties) ->
+  if objectToUpdate
+    $.extend objectToUpdate, GameObject(newProperties)
+
 $(document).bind "contextmenu", (event) ->
   event.preventDefault()
 
