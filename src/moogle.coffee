@@ -69,16 +69,26 @@ Moogle = (I) ->
       I.velocity.x = I.velocity.x.clamp(-I.speed, I.speed)
   
   physics = PHYSICS.platform
+  
+  laserColors = [
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(255, 255, 255, 0.25)"
+    "rgba(32, 190, 230, 0.25)"
+  ]
+  
+  particleSizes = [2, 8, 4, 6]
     
   self = GameObject(I).extend
     draw: (canvas) ->
       if laserEndpoint
-        canvas.strokeColor("#008")
-        canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
+        5.times ->
+          canvas.strokeColor laserColors.rand()
+          canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
 
       canvas.fillColor I.color
       canvas.fillRect I.x, I.y, I.width, I.height
-
   
     before:
       update: ->
@@ -127,11 +137,15 @@ Moogle = (I) ->
               x: laserEndpoint.x
               y: laserEndpoint.y
               generator:
-                color: "rgba(255, 128, 255, 0.7)"  
+                color: "rgba(255, 0, 255, 0.7)"
                 duration: 3
+                height: (n) ->
+                  particleSizes.wrap(n)
                 maxSpeed: 5
                 velocity: (n) ->
                   Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+                width: (n) ->
+                  particleSizes.wrap(n)                  
           else
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
