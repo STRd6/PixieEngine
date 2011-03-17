@@ -81,18 +81,13 @@ Moogle = (I) ->
   particleSizes = [2, 8, 4, 6]
     
   self = GameObject(I).extend
-    draw: (canvas) ->
-      if laserEndpoint
-        laserSource = self.centeredBounds()
-        
-        5.times ->
-          canvas.strokeColor laserColors.rand()
-          canvas.drawLine(laserSource.x, laserSource.y, laserEndpoint.x, laserEndpoint.y, 2)
-
-      canvas.fillColor I.color
-      canvas.fillRect I.x, I.y, I.width, I.height
-  
     before:
+      draw: (canvas) ->
+        if laserEndpoint
+          5.times ->
+            canvas.strokeColor laserColors.rand()
+            canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
+            
       update: ->
         if engine.collides(self.bounds(0, 1))
           falling = false
