@@ -26,9 +26,8 @@ $(document).bind "contextmenu", (event) ->
   event.preventDefault()
 
 $(document).mousedown (event) ->
-  event.preventDefault()
-
   if developer
+    event.preventDefault()
     console.log event.which
 
     if event.which == 3
