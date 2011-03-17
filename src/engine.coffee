@@ -55,6 +55,8 @@
           queuedObjects.push obj
         else
           objects.push obj
+          
+      construct: construct
   
       #TODO: This is only used in testing and should be removed when possible
       age: ->
