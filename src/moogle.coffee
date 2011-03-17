@@ -69,16 +69,24 @@ Moogle = (I) ->
       I.velocity.x = I.velocity.x.clamp(-I.speed, I.speed)
   
   physics = PHYSICS.platform
+  
+  laserColors = [
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(0, 0, 128, 0.75)"
+    "rgba(255, 255, 255, 0.25)"
+    "rgba(32, 190, 230, 0.25)"
+  ]
     
   self = GameObject(I).extend
     draw: (canvas) ->
       if laserEndpoint
-        canvas.strokeColor("#008")
-        canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
+        5.times ->
+          canvas.strokeColor laserColors.rand()
+          canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
 
       canvas.fillColor I.color
       canvas.fillRect I.x, I.y, I.width, I.height
-
   
     before:
       update: ->
