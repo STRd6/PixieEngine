@@ -13,6 +13,10 @@ Moogle = (I) ->
     velocity: Point(0, 0)
     excludedModules: ["Movable"]
 
+  # Cast acceleration and velocity to points
+  I.acceleration = Point(I.acceleration.x, I.acceleration.y)
+  I.velocity = Point(I.velocity.x, I.velocity.y)
+
   jumping = false
   falling = true
   lastDirection = 1
@@ -73,7 +77,7 @@ Moogle = (I) ->
         canvas.drawLine(I.x, I.y, laserEndpoint.x, laserEndpoint.y, 2)
 
       canvas.fillColor I.color
-      canvas.fillRect I.x, I.y, 16, 16
+      canvas.fillRect I.x, I.y, I.width, I.height
 
   
     before:
