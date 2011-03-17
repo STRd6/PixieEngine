@@ -77,6 +77,8 @@ Moogle = (I) ->
     "rgba(255, 255, 255, 0.25)"
     "rgba(32, 190, 230, 0.25)"
   ]
+  
+  particleSizes = [2, 8, 4, 6]
     
   self = GameObject(I).extend
     draw: (canvas) ->
@@ -135,11 +137,15 @@ Moogle = (I) ->
               x: laserEndpoint.x
               y: laserEndpoint.y
               generator:
-                color: "rgba(255, 128, 255, 0.7)"  
+                color: "rgba(255, 128, 255, 0.7)"
                 duration: 3
+                height: (n) ->
+                  particleSizes.wrap(n)
                 maxSpeed: 5
                 velocity: (n) ->
                   Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+                width: (n) ->
+                  particleSizes.wrap(n)                  
           else
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
