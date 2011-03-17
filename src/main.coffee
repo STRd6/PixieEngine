@@ -32,7 +32,7 @@ $(document).mousedown (event) ->
 
     if event.which == 3
       if object = engine.objectAt(event.pageX, event.pageY)
-        parent.document.editProperties(object.I)
+        parent.editProperties(object.I)
         
       console.log object
         
