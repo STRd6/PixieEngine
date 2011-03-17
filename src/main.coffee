@@ -25,23 +25,23 @@ developer = false
 objectToUpdate = null
 window.updateObjectProperties = (newProperties) ->
   if objectToUpdate
-    $.extend objectToUpdate, GameObject(newProperties)
+    $.extend objectToUpdate, engine.construct(newProperties)
 
 $(document).bind "contextmenu", (event) ->
   event.preventDefault()
 
 $(document).mousedown (event) ->
   if developer
-    event.preventDefault()
     console.log event.which
 
     if event.which == 3
       if object = engine.objectAt(event.pageX, event.pageY)
         parent.editProperties(object.I)
         
-      console.log object
+        objectToUpdate = object
         
-    else
+      console.log object
+    else if event.which == 2
       engine.add $.extend(
         x: event.pageX.snap(32)
         y: event.pageY.snap(32)
