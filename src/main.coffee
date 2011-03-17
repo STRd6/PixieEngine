@@ -22,12 +22,26 @@ engine.start()
 
 developer = false
 
+$(document).bind "contextmenu", (event) ->
+  event.preventDefault()
+
 $(document).mousedown (event) ->
+  event.preventDefault()
+
   if developer
-    engine.add $.extend(
-      x: event.pageX.snap(32)
-      y: event.pageY.snap(32)
-    , block)
+    console.log event.which
+
+    if event.which == 3
+      if object = engine.objectAt(event.pageX, event.pageY)
+        parent.document.editProperties(object.I)
+        
+      console.log object
+        
+    else
+      engine.add $.extend(
+        x: event.pageX.snap(32)
+        y: event.pageY.snap(32)
+      , block)
 
 $(document).bind "keydown", "esc", () ->
   developer = !developer
