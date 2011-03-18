@@ -110,9 +110,9 @@
         savedState = objects.map (object) ->
           $.extend({}, object.I)
   
-      loadState: () ->
-        if savedState
-          objects = savedState.map (objectData) ->
+      loadState: (newState) ->
+        if newState ||= savedState
+          objects = newState.map (objectData) ->
             construct $.extend({}, objectData)
   
       reload: () ->
