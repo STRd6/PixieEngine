@@ -21,6 +21,7 @@ engine.add
 engine.start()
 
 developer = false
+savedState = null
 
 objectToUpdate = null
 window.updateObjectProperties = (newProperties) ->
@@ -45,6 +46,7 @@ $(document).mousedown (event) ->
       engine.add $.extend(
         x: event.pageX.snap(32)
         y: event.pageY.snap(32)
+        destructable: true
       , block)
 
 $(document).bind "keydown", "esc", () ->
@@ -56,10 +58,10 @@ $(document).bind "keydown", "esc", () ->
     engine.play()
 
 $(document).bind "keydown", "f3", () ->
-  engine.saveState()
+  savedState = engine.saveState()
   
 $(document).bind "keydown", "f4", () ->
-  engine.loadState()
+  engine.loadState(savedState)
   
 $(document).bind "keydown", "f5", () ->
   engine.reload()
