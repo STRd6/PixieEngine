@@ -46,6 +46,7 @@ $(document).mousedown (event) ->
       engine.add $.extend(
         x: event.pageX.snap(32)
         y: event.pageY.snap(32)
+        destructable: true
       , block)
 
 $(document).bind "keydown", "esc", () ->
