@@ -1,7 +1,7 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
-    backgroundColor: "#255222"
+    backgroundColor: "#FFFFFF"
  
   window.Engine = (options) ->
     options = $.extend({}, defaults, options)
