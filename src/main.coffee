@@ -6,6 +6,7 @@ block =
   width: 32
   height: 32
   solid: true
+  destructable: true
     
 20.times (i) ->
   engine.add $.extend(
