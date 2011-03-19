@@ -71,8 +71,8 @@ Moogle = (I) ->
   physics = PHYSICS.platform
   
   laserColors = [
-    "rgba(0, 255, 128, 0.75)"
-    "rgba(0, 255, 128, 0.75)"
+    "rgba(255, 0, 128, 0.75)"
+    "rgba(255, 0, 128, 0.75)"
     "rgba(255, 0, 128, 0.75)"
     "rgba(255, 255, 255, 0.25)"
     "rgba(32, 190, 230, 0.25)"
