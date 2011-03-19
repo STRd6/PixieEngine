@@ -42,7 +42,7 @@ $(document).mousedown (event) ->
         objectToUpdate = object
         
       console.log object
-    else if event.which == 2
+    else if event.which == 2 || keydown.shift
       engine.add $.extend(
         x: event.pageX.snap(32)
         y: event.pageY.snap(32)
