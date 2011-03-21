@@ -2,8 +2,8 @@
   "author": "STRd6",
   "name": "PixieEngine",
   "libs": {
-    "corelib.js": "https://github.com/STRd6/corelib/raw/v0.0.3/corelib.js",
-    "gamelib.js": "https://github.com/STRd6/gamelib/raw/v0.0.2/gamelib.js"
+    "corelib.js": "https://github.com/STRd6/corelib/raw/v0.0.4/corelib.js",
+    "gamelib.js": "https://github.com/STRd6/gamelib/raw/v0.0.3/gamelib.js"
   },
   "directories": {
     "lib": "lib",
