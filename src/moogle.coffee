@@ -135,7 +135,7 @@ Moogle = (I) ->
               x: laserEndpoint.x
               y: laserEndpoint.y
               generator:
-                color: "rgba(255, 0, 255, 0.7)"
+                color: Color(255, 0, 0, 0.5)
                 duration: 3
                 height: (n) ->
                   particleSizes.wrap(n)
