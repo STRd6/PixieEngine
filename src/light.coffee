@@ -83,8 +83,8 @@ Light = (I) ->
           #lineTo(canvas, farCorners[1], "red")
           
           veryFar = [
-            farCorners[0].subtract(I).norm().scale(1000)
-            farCorners[1].subtract(I).norm().scale(1000)
+            farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0])
+            farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
           ]
           
           fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
