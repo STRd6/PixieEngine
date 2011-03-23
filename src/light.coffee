@@ -28,8 +28,8 @@ Light = (I) ->
         lineToCorner = corner.subtract(originPoint)
         newCross = centerLine.cross(lineToCorner)
         
-        canvas.fillColor("#F0F")
-        canvas.fillText (newCross * 100).round()/100, corner.x, corner.y
+        # canvas.fillColor("#F0F")
+        # canvas.fillText (newCross * 100).round()/100, corner.x, corner.y
         
         if min?
           if newCross < minCross
@@ -57,7 +57,7 @@ Light = (I) ->
       engine.eachObject (object) ->
         if(object.I.opaque)
           corners(object).each (corner) ->
-            lineTo(canvas, corner)
+            ;#lineTo(canvas, corner)
             
           farCorners = farthestCorners(object, canvas)
           lineTo(canvas, farCorners[0], "green")
