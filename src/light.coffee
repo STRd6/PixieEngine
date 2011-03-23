@@ -1,6 +1,9 @@
 Light = (I) ->
   I ||= {}
   
+  lightCanvas = $("<canvas width=640 height=480 />").powerCanvas()
+  lightCanvas.context().globalAlpha = 0.5
+  
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
@@ -52,6 +55,11 @@ Light = (I) ->
 
   self = GameObject(I).extend
     draw: (canvas) ->
+      lightCanvas.clear()
+      lightCanvas.fill Color(0, 0, 0, 0.5)
+      
+      #canvas.fill lightCanvas.element()
+
       canvas.fillCircle(I.x, I.y, 10, "orange")
 
       engine.eachObject (object) ->

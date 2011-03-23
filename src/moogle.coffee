@@ -143,7 +143,14 @@ Moogle = (I) ->
                 velocity: (n) ->
                   Point.fromAngle(Random.angle()).scale(rand(5) + 1)
                 width: (n) ->
-                  particleSizes.wrap(n)                  
+                  particleSizes.wrap(n)
+ 
+            engine.add
+              class: "Light"
+              duration: 1
+              x: laserEndpoint.x
+              y: laserEndpoint.y
+
           else
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
