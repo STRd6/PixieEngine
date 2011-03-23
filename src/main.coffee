@@ -18,6 +18,8 @@ engine.add
   x: 320
   y: 240
   
+engine.loadState Local.get("level")
+  
 engine.start()
 
 developer = false
