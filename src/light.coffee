@@ -1,15 +1,17 @@
 Light = (I) ->
   I ||= {}
   
-  lightCanvas = $("<canvas width=640 height=480 />").powerCanvas()
-  lightCanvas.context().globalAlpha = 0.5
+  $.reverseMerge I,
+    color: "orange"
+  
+  shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
   
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
     
   fillShape = (context, p1, p2, p3, p4) ->
-    context.fillColor = "rgba(0, 0, 0, 0.5)"
+    context.fillColor = "#000"
     context.beginPath()
     context.moveTo(p1.x, p1.y)
     context.lineTo(p2.x, p2.y)
@@ -65,10 +67,11 @@ Light = (I) ->
 
   self = GameObject(I).extend
     draw: (canvas) ->
-      lightCanvas.clear()
-      lcContext = lightCanvas.context()
-
-      canvas.fillCircle(I.x, I.y, 10, "orange")
+      canvas.fillCircle(I.x, I.y, 10, I.color)
+      
+    illuminate: (canvas) ->
+      shadowCanvas.clear()
+      shadowContext = shadowCanvas.context()
 
       engine.eachObject (object) ->
         if(object.I.opaque)
@@ -84,9 +87,9 @@ Light = (I) ->
             farCorners[1].subtract(I).norm().scale(1000)
           ]
           
-          fillShape(lcContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
+          fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
           
           
-      lighting = lightCanvas.element()
-      canvas.drawImage(lighting, 0, 0, lighting.width, lighting.height, 0, 0, lighting.width, lighting.height)
+      shadows = shadowCanvas.element()
+      canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
 
