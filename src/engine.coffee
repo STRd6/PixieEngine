@@ -1,7 +1,7 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
-    backgroundColor: "#255222"
+    backgroundColor: "#FFFFFF"
  
   window.Engine = (options) ->
     options = $.extend({}, defaults, options)
@@ -110,9 +110,9 @@
         savedState = objects.map (object) ->
           $.extend({}, object.I)
   
-      loadState: () ->
-        if savedState
-          objects = savedState.map (objectData) ->
+      loadState: (newState) ->
+        if newState ||= savedState
+          objects = newState.map (objectData) ->
             construct $.extend({}, objectData)
   
       reload: () ->

@@ -1,0 +1,13 @@
+{
+  "author": "STRd6",
+  "name": "PixieEngine",
+  "libs": {
+    "gamelib.js": "https://github.com/STRd6/gamelib/raw/v0.0.5/gamelib.js"
+  },
+  "directories": {
+    "lib": "lib",
+    "source": "src",
+    "test": "test"
+  }
+}
+
