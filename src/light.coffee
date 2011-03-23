@@ -8,6 +8,16 @@ Light = (I) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
     
+  fillShape = (context, p1, p2, p3, p4) ->
+    context.fillColor = "rgba(0, 0, 0, 0.5)"
+    context.beginPath()
+    context.moveTo(p1.x, p1.y)
+    context.lineTo(p2.x, p2.y)
+    context.lineTo(p3.x, p3.y)
+    context.lineTo(p4.x, p4.y)
+    context.lineTo(p1.x, p1.y)
+    context.fill()
+
   corners = (object) ->
     ((I) ->
       return [
@@ -56,9 +66,7 @@ Light = (I) ->
   self = GameObject(I).extend
     draw: (canvas) ->
       lightCanvas.clear()
-      lightCanvas.fill Color(0, 0, 0, 0.5)
-      
-      #canvas.fill lightCanvas.element()
+      lcContext = lightCanvas.context()
 
       canvas.fillCircle(I.x, I.y, 10, "orange")
 
@@ -68,6 +76,17 @@ Light = (I) ->
             ;#lineTo(canvas, corner)
             
           farCorners = farthestCorners(object, canvas)
-          lineTo(canvas, farCorners[0], "green")
-          lineTo(canvas, farCorners[1], "red")
+          #lineTo(canvas, farCorners[0], "green")
+          #lineTo(canvas, farCorners[1], "red")
+          
+          veryFar = [
+            farCorners[0].subtract(I).norm().scale(1000)
+            farCorners[1].subtract(I).norm().scale(1000)
+          ]
+          
+          fillShape(lcContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
+          
+          
+      lighting = lightCanvas.element()
+      canvas.drawImage(lighting, 0, 0, lighting.width, lighting.height, 0, 0, lighting.width, lighting.height)
 
