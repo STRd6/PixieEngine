@@ -17,8 +17,9 @@ engine.add
   class: "Moogle"
   x: 320
   y: 240
-  
-engine.loadState Local.get("level")
+
+if level = Local.get("level")
+  engine.loadState level
   
 engine.start()
 
