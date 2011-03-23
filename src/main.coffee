@@ -24,7 +24,6 @@ if level = Local.get("level")
 engine.start()
 
 developer = false
-savedState = null
 
 objectToUpdate = null
 window.updateObjectProperties = (newProperties) ->
@@ -60,10 +59,10 @@ $(document).bind "keydown", "esc", () ->
     engine.play()
 
 $(document).bind "keydown", "f3", () ->
-  savedState = engine.saveState()
+  Local.set("level", engine.saveState())
   
 $(document).bind "keydown", "f4", () ->
-  engine.loadState(savedState)
+  engine.loadState(Local.get("level"))
   
 $(document).bind "keydown", "f5", () ->
   engine.reload()
