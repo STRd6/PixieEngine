@@ -2,6 +2,8 @@
   defaults =
     FPS: 33.3333
     backgroundColor: "#FFFFFF"
+    
+  shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
  
   window.Engine = (options) ->
     options = $.extend({}, defaults, options)
@@ -27,10 +29,23 @@
       queuedObjects = []
   
     draw = ->
+      lightSources = objects.inject 0, (count, object) -> 
+        count + if object.illuminate then 1 else 0
+        
+      shadowCanvas.clear()
+      shadowCanvas.context().globalAlpha = (1/lightSources) * 0.5
+      shadows = shadowCanvas.element()
+
+      shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
+        objects.each (object) ->
+          object.illuminate?(shadowCanvas)
+    
       canvas.withTransform cameraTransform, (canvas) ->
         if backgroundColor
           canvas.fill(backgroundColor)
         objects.invoke("draw", canvas)
+        
+      canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
 
     step = ->
       unless paused
