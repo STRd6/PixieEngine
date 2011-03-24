@@ -56,7 +56,6 @@
           block(this)
         finally
           context.restore()
-        
 
         return this
 
@@ -212,7 +211,6 @@
         if color
           if color.channels
             context.fillStyle = color.toString()
-            log color
           else
             context.fillStyle = color
           
