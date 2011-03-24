@@ -31,10 +31,14 @@
     draw = ->
       lightSources = objects.inject 0, (count, object) -> 
         count + if object.illuminate then 1 else 0
-        
+      
+      shadowContext = shadowCanvas.context()
       shadowCanvas.clear()
-      shadowCanvas.context().globalAlpha = (1/lightSources) * 0.5
-      shadows = shadowCanvas.element()
+      shadowContext.globalAlpha = 1
+      shadowContext.globalCompositeOperation ="source-over"
+      shadowCanvas.fill("#000")
+      #shadowContext.globalAlpha = 0.5
+      shadowContext.globalCompositeOperation = "destination-out"
 
       shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
         objects.each (object) ->
@@ -45,7 +49,9 @@
           canvas.fill(backgroundColor)
         objects.invoke("draw", canvas)
         
+      shadows = shadowCanvas.element()
       canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+      
 
     step = ->
       unless paused

@@ -70,8 +70,25 @@ Light = (I) ->
       canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
-      shadowCanvas.clear()
       shadowContext = shadowCanvas.context()
+      shadowContext.globalCompositeOperation = "source-over"
+      shadowCanvas.clear()
+      
+      #shadowCanvas.fillCircle(I.x, I.y, 1000, "rgba(0, 0, 0, 0.5)")
+      #shadowCanvas.fillCircle(I.x, I.y, 500, "rgba(0, 0, 0, 0.5)")
+      #shadowCanvas.fillCircle(I.x, I.y, 250, "rgba(0, 0, 0, 0.5)")
+      #shadowCanvas.fillCircle(I.x, I.y, 125, "rgba(0, 0, 0, 0.5)")
+      #shadowCanvas.fillCircle(I.x, I.y, 50, "rgba(0, 0, 0, 0.5)")
+      
+      radgrad = shadowContext.createRadialGradient(I.x, I.y, 0, I.x, I.y, 500)
+      radgrad.addColorStop(0, "#000")
+      radgrad.addColorStop(1, "rgba(0, 0, 0, 0)")
+      shadowCanvas.fillCircle(I.x, I.y, 500, radgrad)
+      #shadowContext.fillStyle = radgrad
+      #shadowContext.fillRect(0, 0, 640, 480)
+      
+      shadowContext.globalCompositeOperation = "destination-out"
+      
 
       engine.eachObject (object) ->
         if(object.I.opaque)
