@@ -120,11 +120,28 @@ Moogle = (I) ->
         laserEndpoint = null
           
         if shootDirection
-          if nearestHit = engine.rayCollides(self.centeredBounds(), shootDirection)
+          center = self.centeredBounds()
+          if nearestHit = engine.rayCollides(center, shootDirection)
             laserEndpoint = nearestHit
             object = nearestHit.object
+            
+          engine.add
+            class: "Light"
+            color: "rgba(0, 0, 0, 0)"
+            radius: 50
+            duration: 1
+            x: center.x
+            y: center.y
 
           if laserEndpoint
+            engine.add
+              class: "Light"
+              color: "rgba(0, 0, 0, 0)"
+              radius: 50
+              duration: 1
+              x: laserEndpoint.x
+              y: laserEndpoint.y
+              
             engine.add
               class: "Emitter"
               duration: 10
