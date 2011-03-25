@@ -2,19 +2,17 @@
   defaults =
     FPS: 33.3333
     backgroundColor: "#FFFFFF"
+    ambientLight: 1
     
   shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
  
-  window.Engine = (options) ->
-    options = $.extend({}, defaults, options)
+  window.Engine = (I) ->
+    $.reverseMerge I, defaults
   
     intervalId = null
     savedState = null
     age = 0
     paused = false
-    
-    backgroundColor = options.backgroundColor
-    FPS = options.FPS
 
     queuedObjects = []
     objects = []
@@ -29,9 +27,7 @@
       queuedObjects = []
 
     draw = ->
-      ambientLight = 1
-
-      if ambientLight < 1
+      if I.ambientLight < 1
         lightSources = objects.inject 0, (count, object) -> 
           count + if object.illuminate then 1 else 0
   
@@ -39,7 +35,7 @@
         shadowContext.globalCompositeOperation = "source-over"
         shadowCanvas.clear()
         # Fill with shadows
-        shadowCanvas.fill("rgba(0, 0, 0, #{1 - ambientLight})")
+        shadowCanvas.fill("rgba(0, 0, 0, #{1 - I.ambientLight})")
   
         # Etch out the light
         shadowContext.globalCompositeOperation = "destination-out"
@@ -48,11 +44,11 @@
             object.illuminate?(shadowCanvas)
 
       canvas.withTransform cameraTransform, (canvas) ->
-        if backgroundColor
-          canvas.fill(backgroundColor)
+        if I.backgroundColor
+          canvas.fill(I.backgroundColor)
         objects.invoke("draw", canvas)
 
-      if ambientLight < 1
+      if I.ambientLight < 1
         shadows = shadowCanvas.element()
         canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)      
 
@@ -63,7 +59,7 @@
 
       draw()
    
-    canvas = options.canvas || $("<canvas />").powerCanvas()
+    canvas = I.canvas || $("<canvas />").powerCanvas()
     
     construct = (entityData) ->
       if entityData.class
@@ -147,7 +143,7 @@
         unless intervalId
           intervalId = setInterval(() ->
             step()
-          , 1000 / FPS)
+          , 1000 / I.FPS)
         
       stop: () ->
         clearInterval(intervalId)
@@ -163,7 +159,7 @@
         paused
         
       setFramerate: (newFPS) ->
-        FPS = newFPS
+        I.FPS = newFPS
         self.stop()
         self.start()
 )(jQuery)
