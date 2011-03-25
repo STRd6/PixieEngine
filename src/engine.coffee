@@ -27,32 +27,34 @@
         
       objects = objects.concat(queuedObjects)
       queuedObjects = []
-  
-    draw = ->
-      lightSources = objects.inject 0, (count, object) -> 
-        count + if object.illuminate then 1 else 0
-      
-      ambientLight = 0.125
-      shadowContext = shadowCanvas.context()
-      shadowContext.globalCompositeOperation = "source-over"
-      shadowCanvas.clear()
-      # Fill with shadows
-      shadowCanvas.fill("rgba(0, 0, 0, #{1 - ambientLight})")
 
-      # Etch out the light
-      shadowContext.globalCompositeOperation = "destination-out"
-      shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
-        objects.each (object, i) ->
-          object.illuminate?(shadowCanvas)
-    
+    draw = ->
+      ambientLight = 1
+
+      if ambientLight < 1
+        lightSources = objects.inject 0, (count, object) -> 
+          count + if object.illuminate then 1 else 0
+  
+        shadowContext = shadowCanvas.context()
+        shadowContext.globalCompositeOperation = "source-over"
+        shadowCanvas.clear()
+        # Fill with shadows
+        shadowCanvas.fill("rgba(0, 0, 0, #{1 - ambientLight})")
+  
+        # Etch out the light
+        shadowContext.globalCompositeOperation = "destination-out"
+        shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
+          objects.each (object, i) ->
+            object.illuminate?(shadowCanvas)
+
       canvas.withTransform cameraTransform, (canvas) ->
         if backgroundColor
           canvas.fill(backgroundColor)
         objects.invoke("draw", canvas)
-        
-      shadows = shadowCanvas.element()
-      canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
-      
+
+      if ambientLight < 1
+        shadows = shadowCanvas.element()
+        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)      
 
     step = ->
       unless paused
