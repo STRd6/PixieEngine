@@ -32,14 +32,15 @@
       lightSources = objects.inject 0, (count, object) -> 
         count + if object.illuminate then 1 else 0
       
+      ambientLight = 0.125
       shadowContext = shadowCanvas.context()
+      shadowContext.globalCompositeOperation = "source-over"
       shadowCanvas.clear()
-      #shadowContext.globalAlpha = 1
-      shadowContext.globalCompositeOperation ="source-over"
-      shadowCanvas.fill("rgba(0, 0, 0, 0.9)")
-      #shadowContext.globalAlpha = 0.5
-      shadowContext.globalCompositeOperation = "destination-out"
+      # Fill with shadows
+      shadowCanvas.fill("rgba(0, 0, 0, #{1 - ambientLight})")
 
+      # Etch out the light
+      shadowContext.globalCompositeOperation = "destination-out"
       shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
         objects.each (object, i) ->
           object.illuminate?(shadowCanvas)
