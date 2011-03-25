@@ -98,7 +98,7 @@ Light = (I) ->
       #shadowCanvas.fillCircle(I.x, I.y, 50, "rgba(0, 0, 0, 0.5)")
       
       radgrad = generateRadialGradient(I, shadowContext, true)
-      shadowCanvas.fillCircle(I.x, I.y, 500, radgrad)
+      shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
       #shadowContext.fillStyle = radgrad
       #shadowContext.fillRect(0, 0, 640, 480)
       
