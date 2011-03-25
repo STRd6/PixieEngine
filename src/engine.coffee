@@ -34,14 +34,14 @@
       
       shadowContext = shadowCanvas.context()
       shadowCanvas.clear()
-      shadowContext.globalAlpha = 1
+      #shadowContext.globalAlpha = 1
       shadowContext.globalCompositeOperation ="source-over"
-      shadowCanvas.fill("#000")
+      shadowCanvas.fill("rgba(0, 0, 0, 0.9)")
       #shadowContext.globalAlpha = 0.5
       shadowContext.globalCompositeOperation = "destination-out"
 
       shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
-        objects.each (object) ->
+        objects.each (object, i) ->
           object.illuminate?(shadowCanvas)
     
       canvas.withTransform cameraTransform, (canvas) ->
