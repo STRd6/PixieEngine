@@ -75,7 +75,15 @@
       
       createRadialGradient: (x0, y0, r0, x1, y1, r1) ->
         context.createRadialGradient(x0, y0, r0, x1, y1, r1)
-      
+        
+      buildRadialGradient: (c1, c2, stops) ->
+        gradient = context.createRadialGradient(c1.x, c1.y, c1.radius, c2.x, c2.y, c2.radius)
+
+        for position, color of stops
+          gradient.addColorStop(position, color)
+
+        return gradient
+
       createPattern: (image, repitition) ->
         context.createPattern(image, repitition)
 
