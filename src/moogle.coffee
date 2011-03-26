@@ -29,14 +29,14 @@ Moogle = (I) ->
     right: "right"
     down: "down"
     left: "left"
-    A: ""
+    A: "up"
     B: "space"
   }, {
     up: ","
     right: "e"
     down: "o"
     left: "a"
-    A: "2"
+    A: ","
     B: "1"
   }][I.controller]
 
