@@ -4,6 +4,7 @@ Moogle = (I) ->
   GRAVITY = Point(0, 2)
   
   $.reverseMerge I,
+    controller: 0
     color: "blue"
     speed: 6
     acceleration: Point(0, 0)
@@ -22,6 +23,25 @@ Moogle = (I) ->
   lastDirection = 1
   shooting = false
   laserEndpoint = null
+
+  actions = [{
+    up: "up"
+    right: "right"
+    down: "down"
+    left: "left"
+    A: ""
+    B: "space"
+  }, {
+    up: ","
+    right: "e"
+    down: "o"
+    left: "a"
+    A: "2"
+    B: "1"
+  }][I.controller]
+
+  actionDown = (action) ->
+    keydown[actions[action]]
   
   PHYSICS =
     platform: () ->
@@ -31,42 +51,26 @@ Moogle = (I) ->
         I.velocity.y += GRAVITY.y
       else
 
-        if keydown.up
+        if actionDown "up"
           jumping = true
           I.velocity.y = -7 * GRAVITY.y - 2
         
       # Move around based on input
-      if keydown.right
+      if actionDown "right"
         I.velocity.x += 2
-      if keydown.left
+      if actionDown "left"
         I.velocity.x -= 2
-      unless keydown.left || keydown.right
+      unless actionDown("left") || actionDown("right")
         I.velocity.x = 0
-      unless keydown.up
+      unless actionDown("up")
         jumping = false
         
-      shooting = keydown.space
+      shooting = actionDown("B")
         
       if I.velocity.x.sign()
         lastDirection = I.velocity.x.sign() 
         
       I.velocity.x = I.velocity.x.clamp(-8, 8)
-      
-    arena: () ->
-      I.velocity.y = I.velocity.y.approach(0, 1)
-      I.velocity.x = I.velocity.x.approach(0, 1)
-      
-      if Game.keydown("right")
-        I.velocity.x += 2
-      if Game.keydown("left")
-        I.velocity.x -= 2
-      if Game.keydown("up")
-        I.velocity.y -= 2
-      if Game.keydown("down")
-        I.velocity.y += 2
-
-      I.velocity.y = I.velocity.y.clamp(-I.speed, I.speed)
-      I.velocity.x = I.velocity.x.clamp(-I.speed, I.speed)
   
   physics = PHYSICS.platform
   
