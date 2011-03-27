@@ -34,6 +34,7 @@ Moogle = (I) ->
     left: "left"
     A: "return"
     B: "space"
+    C: "pageup"
   }, {
     up: ","
     right: "e"
@@ -41,6 +42,7 @@ Moogle = (I) ->
     left: "a"
     A: "2"
     B: "1"
+    C: "Q"
   }][I.controller]
 
   actionDown = (triggers...) ->
