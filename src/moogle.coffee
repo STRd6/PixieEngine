@@ -55,7 +55,7 @@ Moogle = (I) ->
         I.velocity.y += GRAVITY.y
       else
 
-        if actionDown "up", "A"
+        if actionDown "A"
           jumping = true
           I.velocity.y = -7 * GRAVITY.y - 2
         
@@ -66,10 +66,17 @@ Moogle = (I) ->
         I.velocity.x -= 2
       unless actionDown("left") || actionDown("right")
         I.velocity.x = 0
-      unless actionDown("up", "A")
+      unless actionDown("A")
         jumping = false
         
       shooting = actionDown("B")
+      
+      ###
+        if actionDown "up"
+          shooting = true
+        if actionDown "down"
+          shooting = true
+      ###  
         
       if I.velocity.x.sign()
         lastDirection = I.velocity.x.sign() 
@@ -129,7 +136,12 @@ Moogle = (I) ->
         if Mouse.left
           shootDirection = Mouse.location.subtract(I)
         else if shooting
-          shootDirection = Point(lastDirection, 0)
+          if actionDown("up")
+            shootDirection = Point(0, -1)
+          else if actionDown("down")
+            shootDirection = Point(0, 1)
+          else
+            shootDirection = Point(lastDirection, 0)
 
         laserEndpoint = null
           
