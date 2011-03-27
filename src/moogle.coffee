@@ -206,9 +206,7 @@ Moogle = (I) ->
               engine.queue(nextLevel)
     
     
-  self.bind 'destroy', ->
-    debugger
-    
+  self.bind 'destroy', ->    
     engine.add
       class: "Emitter"
       duration: 10
