@@ -4,6 +4,7 @@ Light = (I) ->
   $.reverseMerge I,
     color: "orange"
     radius: 500
+    shadows: true
   
   shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
   
@@ -110,23 +111,24 @@ Light = (I) ->
       radgrad = generateRadialGradient(I, shadowContext, true)
       shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
-      shadowContext.globalCompositeOperation = "destination-out"
-
-      engine.eachObject (object) ->
-        if(object.I.opaque)
-          corners(object).each (corner) ->
-            ;#lineTo(canvas, corner)
+      if I.shadows
+        shadowContext.globalCompositeOperation = "destination-out"
+  
+        engine.eachObject (object) ->
+          if(object.I.opaque)
+            corners(object).each (corner) ->
+              ;#lineTo(canvas, corner)
+              
+            farCorners = farthestCorners(object, canvas)
+            #lineTo(canvas, farCorners[0], "green")
+            #lineTo(canvas, farCorners[1], "red")
             
-          farCorners = farthestCorners(object, canvas)
-          #lineTo(canvas, farCorners[0], "green")
-          #lineTo(canvas, farCorners[1], "red")
-          
-          veryFar = [
-            farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0])
-            farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
-          ]
-          
-          fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
+            veryFar = [
+              farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0])
+              farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
+            ]
+            
+            fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
           
           
       shadows = shadowCanvas.element()
