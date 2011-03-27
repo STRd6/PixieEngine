@@ -96,6 +96,35 @@ Moogle = (I) ->
   ]
   
   particleSizes = [2, 8, 4, 6]
+  
+  laserParticleEffects = (target) ->
+    engine.add
+      class: "Emitter"
+      duration: 10
+      sprite: Sprite.EMPTY
+      velocity: Point(0, 0)
+      particleCount: 2
+      batchSize: 5
+      x: laserEndpoint.x
+      y: laserEndpoint.y
+      generator:
+        color: Color(255, 0, 0, 0.5)
+        duration: 3
+        height: (n) ->
+          particleSizes.wrap(n)
+        maxSpeed: 5
+        velocity: (n) ->
+          Point.fromAngle(Random.angle()).scale(rand(5) + 1)
+        width: (n) ->
+          particleSizes.wrap(n)
+          
+    engine.add
+      class: "Light"
+      color: "rgba(255, 0, 0, 0.25)"
+      radius: 50
+      x: laserEndpoint.x
+      y: laserEndpoint.y
+      duration: 1
     
   self = GameObject(I).extend
     illuminate: (canvas) ->
@@ -167,33 +196,7 @@ Moogle = (I) ->
             object = nearestHit.object
 
           if laserEndpoint
-            engine.add
-              class: "Emitter"
-              duration: 10
-              sprite: Sprite.EMPTY
-              velocity: Point(0, 0)
-              particleCount: 2
-              batchSize: 5
-              x: laserEndpoint.x
-              y: laserEndpoint.y
-              generator:
-                color: Color(255, 0, 0, 0.5)
-                duration: 3
-                height: (n) ->
-                  particleSizes.wrap(n)
-                maxSpeed: 5
-                velocity: (n) ->
-                  Point.fromAngle(Random.angle()).scale(rand(5) + 1)
-                width: (n) ->
-                  particleSizes.wrap(n)
-                  
-            engine.add
-              class: "Light"
-              color: "rgba(255, 0, 0, 0.25)"
-              radius: 50
-              x: laserEndpoint.x
-              y: laserEndpoint.y
-              duration: 1
+            laserParticleEffects(laserEndpoint)
 
           else
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
