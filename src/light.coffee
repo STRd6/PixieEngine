@@ -2,6 +2,7 @@ Light = (I) ->
   I ||= {}
   
   $.reverseMerge I,
+    intensity: 1
     color: "orange"
     radius: 500
     shadows: true
@@ -101,10 +102,11 @@ Light = (I) ->
 
   self = GameObject(I).extend
     draw: (canvas) ->
-      canvas.fillCircle(I.x, I.y, 10, I.color)
+      #canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
       shadowContext = shadowCanvas.context()
+      shadowContext.globalAlpha = I.intensity
       shadowContext.globalCompositeOperation = "source-over"
       shadowCanvas.clear()
 
@@ -112,6 +114,7 @@ Light = (I) ->
       shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
       if I.shadows
+        shadowContext.globalAlpha = 1
         shadowContext.globalCompositeOperation = "destination-out"
   
         engine.eachObject (object) ->
