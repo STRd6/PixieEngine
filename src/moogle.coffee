@@ -94,7 +94,7 @@ Moogle = (I) ->
             canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
             
       update: ->
-        if engine.collides(self.bounds(0, 1))
+        if engine.collides(self.bounds(0, 1), self)
           falling = false
         else
           falling = true
@@ -103,14 +103,14 @@ Moogle = (I) ->
 
         #TODO Reduct the # of calls to collides
         I.velocity.x.abs().times ->
-          if !engine.collides(self.bounds(I.velocity.x.sign(), 0))
+          if !engine.collides(self.bounds(I.velocity.x.sign(), 0), self)
             I.x += I.velocity.x.sign()
           else 
             I.velocity.x = 0
     
         #TODO Reduct the # of calls to collides
         I.velocity.y.abs().times ->
-          if !engine.collides(self.bounds(0, I.velocity.y.sign()))
+          if !engine.collides(self.bounds(0, I.velocity.y.sign()), self)
             I.y += I.velocity.y.sign()
           else 
             I.velocity.y = 0
@@ -125,7 +125,7 @@ Moogle = (I) ->
           
         if shootDirection
           center = self.centeredBounds()
-          if nearestHit = engine.rayCollides(center, shootDirection)
+          if nearestHit = engine.rayCollides(center, shootDirection, self)
             laserEndpoint = nearestHit
             object = nearestHit.object
 
