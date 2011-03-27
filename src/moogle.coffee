@@ -228,8 +228,8 @@ Moogle = (I) ->
           particleSizes.wrap(n) * 3
           
     engine.add $.extend({}, I,
-      x: 64
-      y: 64
+      x: [64, 256, 320, 512].rand()
+      y: -I.height
     )
     
     I.active = false
