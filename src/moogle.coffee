@@ -10,7 +10,7 @@ Moogle = (I) ->
     acceleration: Point(0, 0)
     solid: true
     width: 16
-    height: 16
+    height: 24
     velocity: Point(0, 0)
     excludedModules: ["Movable"]
 
