@@ -6,6 +6,7 @@ Moogle = (I) ->
   $.reverseMerge I,
     controller: 0
     color: "blue"
+    cooldown: 0
     speed: 6
     acceleration: Point(0, 0)
     solid: true
@@ -94,6 +95,7 @@ Moogle = (I) ->
             canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
             
       update: ->
+        I.
         if engine.collides(self.bounds(0, 1), self)
           falling = false
         else
@@ -124,6 +126,18 @@ Moogle = (I) ->
         laserEndpoint = null
           
         if shootDirection
+          engine.add
+            class: "Light"
+            color: "rgba(255, 0, 0, 0.25)"
+            intensity: 0.1
+            radius: 50
+            x: I.x + I.width/2
+            y: I.y + I.height/2
+            duration: 3
+            shadows: false
+            step: ->
+              I.radius = I.radius / 2
+        
           center = self.centeredBounds()
           if nearestHit = engine.rayCollides(center, shootDirection, self)
             laserEndpoint = nearestHit
@@ -153,7 +167,7 @@ Moogle = (I) ->
             engine.add
               class: "Light"
               color: "rgba(255, 0, 0, 0.25)"
-              radius: 20
+              radius: 50
               x: laserEndpoint.x
               y: laserEndpoint.y
               duration: 1
