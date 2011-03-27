@@ -89,6 +89,12 @@ Moogle = (I) ->
   particleSizes = [2, 8, 4, 6]
     
   self = GameObject(I).extend
+    illuminate: (canvas) ->
+      if laserEndpoint
+        laserStart = self.centeredBounds()
+        canvas.strokeColor("#000")
+        canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
+  
     before:
       draw: (canvas) ->
         laserStart = self.centeredBounds()
