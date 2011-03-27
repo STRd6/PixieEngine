@@ -9,6 +9,7 @@ Moogle = (I) ->
     color: "blue"
     cooldown: 0
     destructable: true
+    shielding: false
     speed: 6
     acceleration: Point(0, 0)
     solid: true
@@ -20,6 +21,7 @@ Moogle = (I) ->
   # Cast acceleration and velocity to points
   I.acceleration = Point(I.acceleration.x, I.acceleration.y)
   I.velocity = Point(I.velocity.x, I.velocity.y)
+  I.sprite = Sprite.fromPixieId(12525)
 
   jumping = false
   falling = true
@@ -51,15 +53,18 @@ Moogle = (I) ->
   
   PHYSICS =
     platform: () ->
+      I.shielding = false
+    
       if jumping
         I.velocity.y += GRAVITY.scale(0.5).y
       else if falling
         I.velocity.y += GRAVITY.y
       else
-
         if actionDown "A"
           jumping = true
           I.velocity.y = -7 * GRAVITY.y - 2
+        else if actionDown "C"
+          I.shielding = true
         
       # Move around based on input
       if actionDown "right"
@@ -135,10 +140,13 @@ Moogle = (I) ->
   
     before:
       draw: (canvas) ->
-        laserStart = self.centeredBounds()
+        center = self.centeredBounds()
         if laserEndpoint
           canvas.strokeColor I.color
-          canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
+          canvas.drawLine(center.x, center.y, laserEndpoint.x, laserEndpoint.y, 2)
+          
+        if I.shielding
+          canvas.fillCircle(center.x, center.y, 16, "rgba(0, 255, 0, 0.75)")
             
       update: ->
         I.cooldown -= 1 if I.cooldown > 0
@@ -201,8 +209,11 @@ Moogle = (I) ->
           else
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
-        if object?.I.destructable
-          object.destroy()
+        if object?.I
+          if object.I.shielding
+            ;
+          if object.I.destructable
+            object.destroy()
       
         engine.eachObject (object) ->
           if object.I.open && Collision.rectangular(I, object.bounds())
