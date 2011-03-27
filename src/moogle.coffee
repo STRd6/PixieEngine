@@ -66,24 +66,25 @@ Moogle = (I) ->
         else if actionDown "C"
           I.shielding = true
         
-      # Move around based on input
-      if actionDown "right"
-        I.velocity.x += 2
-      if actionDown "left"
-        I.velocity.x -= 2
-      unless actionDown("left") || actionDown("right")
-        I.velocity.x = 0
-      unless actionDown("A")
-        jumping = false
+      unless I.shielding
+        # Move around based on input
+        if actionDown "right"
+          I.velocity.x += 2
+        if actionDown "left"
+          I.velocity.x -= 2
+        unless actionDown("left") || actionDown("right")
+          I.velocity.x = 0
+        unless actionDown("A")
+          jumping = false
+          
+        shooting = actionDown("B")
         
-      shooting = actionDown("B")
-      
-      ###
-        if actionDown "up"
-          shooting = true
-        if actionDown "down"
-          shooting = true
-      ###  
+        ###
+          if actionDown "up"
+            shooting = true
+          if actionDown "down"
+            shooting = true
+        ###  
         
       if I.velocity.x.sign()
         lastDirection = I.velocity.x.sign() 
@@ -212,7 +213,7 @@ Moogle = (I) ->
         if object?.I
           if object.I.shielding
             ;
-          if object.I.destructable
+          else if object.I.destructable
             object.destroy()
       
         engine.eachObject (object) ->
