@@ -90,9 +90,8 @@ Moogle = (I) ->
       draw: (canvas) ->
         laserStart = self.centeredBounds()
         if laserEndpoint
-          5.times ->
-            canvas.strokeColor laserColors.rand()
-            canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
+          canvas.strokeColor I.color
+          canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
             
       update: ->
         I.cooldown -= 1 if I.cooldown > 0
@@ -125,14 +124,15 @@ Moogle = (I) ->
 
         laserEndpoint = null
           
-        if shootDirection
+        if shootDirection && (I.cooldown == 0)
+          I.cooldown += 15
           engine.add
             class: "Light"
             color: "rgba(255, 0, 0, 0.25)"
-            intensity: 0.1
-            radius: 50
-            x: I.x + I.width/2
-            y: I.y + I.height/2
+            intensity: 0.5
+            radius: 100
+            x: I.x + I.width/2 + I.velocity.x
+            y: I.y + I.height/2 + I.velocity.y
             duration: 3
             shadows: false
             step: ->
