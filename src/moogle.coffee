@@ -8,7 +8,7 @@ Moogle = (I) ->
     color: "blue"
     speed: 6
     acceleration: Point(0, 0)
-    solid: false
+    solid: true
     width: 16
     height: 16
     velocity: Point(0, 0)
