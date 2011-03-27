@@ -102,13 +102,13 @@
       eachObject: (iterator) ->
         objects.each iterator
         
-      collides: (bounds) ->
+      collides: (bounds, sourceObject) ->
         objects.inject false, (collided, object) ->
-          collided || (object.solid() && object.collides(bounds))
+          collided || (object.solid() && object != sourceObject && object.collides(bounds))
           
-      rayCollides: (source, direction) ->
+      rayCollides: (source, direction, sourceObject) ->
         hits = objects.map (object) ->
-          hit = object.solid() && Collision.rayRectangle(source, direction, object.centeredBounds())
+          hit = object.solid() && object != sourceObject && Collision.rayRectangle(source, direction, object.centeredBounds())
           hit.object = object if hit
           
           hit
