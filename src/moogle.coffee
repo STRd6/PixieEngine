@@ -187,6 +187,8 @@ Moogle = (I) ->
           
         if shootDirection && (I.cooldown == 0)
           I.cooldown += 15
+          Sound.play("laser")
+          
           engine.add
             class: "Light"
             color: "rgba(255, 0, 0, 0.25)"
@@ -225,6 +227,8 @@ Moogle = (I) ->
         I.x = I.x.clamp(0, SCREEN_WIDTH - I.width)
             
   self.bind 'destroy', ->
+    Sound.play("hit")
+
     engine.add
       class: "Emitter"
       duration: 10
