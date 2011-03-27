@@ -2,6 +2,7 @@ Moogle = (I) ->
   I ||= {}
   
   GRAVITY = Point(0, 2)
+  SCREEN_WIDTH = 640
   
   $.reverseMerge I,
     controller: 0
@@ -205,8 +206,9 @@ Moogle = (I) ->
             if I.active
               I.active = false
               engine.queue(nextLevel)
-    
-    
+
+        I.x = I.x.clamp(0, SCREEN_WIDTH - I.width)
+            
   self.bind 'destroy', ->
     engine.add
       class: "Emitter"
