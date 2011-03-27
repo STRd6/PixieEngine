@@ -176,12 +176,23 @@ Moogle = (I) ->
         if Mouse.left
           shootDirection = Mouse.location.subtract(I)
         else if shooting
-          if actionDown("up")
-            shootDirection = Point(0, -1)
-          else if actionDown("down")
-            shootDirection = Point(0, 1)
-          else
+          shootX = 0
+          shootY = 0
+
+          if actionDown "left"
+            shootX += -1
+          if actionDown "right"
+            shootX += 1
+          
+          if actionDown "up"
+            shootY += -1
+          if actionDown "down"
+            shootY += 1
+          
+          if shootY == 0 && shootX == 0
             shootDirection = Point(lastDirection, 0)
+          else
+            shootDirection = Point(shootX, shootY)
 
         laserEndpoint = null
           
