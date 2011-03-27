@@ -1,6 +1,5 @@
 Just another CoffeeScript game engine.
 
-Snippets
 
 Horizontal Moving Block
 I.x = 0.5 * (640 - I.width) * (1 + Math.cos(I.age * Math.TAU / 240))
