@@ -28,9 +28,6 @@
 
     draw = ->
       if I.ambientLight < 1
-        lightSources = objects.inject 0, (count, object) -> 
-          count + if object.illuminate then 1 else 0
-  
         shadowContext = shadowCanvas.context()
         shadowContext.globalCompositeOperation = "source-over"
         shadowCanvas.clear()
