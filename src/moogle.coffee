@@ -208,6 +208,7 @@ Moogle = (I) ->
     
   self.bind 'destroy', ->
     debugger
+    
     engine.add
       class: "Emitter"
       duration: 10
@@ -215,8 +216,8 @@ Moogle = (I) ->
       velocity: Point(0, 0)
       particleCount: 15
       batchSize: 5
-      x: object.I.width / 2 + object.I.x
-      y: object.I.height / 2 + object.I.y
+      x: I.width / 2 + I.x
+      y: I.height / 2 + I.y
       generator:
         color: "rgba(200, 140, 235, 0.7)"
         duration: 15
@@ -228,10 +229,12 @@ Moogle = (I) ->
         width: (n) ->
           particleSizes.wrap(n) * 3
           
-    engine.add $.extend(I,
+    engine.add $.extend({}, I,
       x: 64
       y: 64
     )
+    
+    I.active = false
 
   self
 
