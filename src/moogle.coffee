@@ -7,6 +7,7 @@ Moogle = (I) ->
     controller: 0
     color: "blue"
     cooldown: 0
+    destructable: true
     speed: 6
     acceleration: Point(0, 0)
     solid: true
@@ -176,7 +177,7 @@ Moogle = (I) ->
             laserEndpoint = shootDirection.norm().scale(1000).add(I)
                   
         if object?.I.destructable
-          object.I.active = false
+          object.destroy()
           engine.add
             class: "Emitter"
             duration: 10
@@ -196,9 +197,7 @@ Moogle = (I) ->
                 Point.fromAngle(Random.angle()).scale(rand(5) + 5)
               width: (n) ->
                 particleSizes.wrap(n) * 3
-        
-        if object?.I.class == "Moogle"
-          object.destroy()
+          
       
         engine.eachObject (object) ->
           if object.I.open && Collision.rectangular(I, object.bounds())
@@ -208,6 +207,7 @@ Moogle = (I) ->
     
     
   self.bind 'destroy', ->
+    debugger
     engine.add
       class: "Emitter"
       duration: 10
