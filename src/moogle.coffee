@@ -196,6 +196,9 @@ Moogle = (I) ->
                 Point.fromAngle(Random.angle()).scale(rand(5) + 5)
               width: (n) ->
                 particleSizes.wrap(n) * 3
+        
+        if object?.I.class == "Moogle"
+          object.destroy()
       
         engine.eachObject (object) ->
           if object.I.open && Collision.rectangular(I, object.bounds())
