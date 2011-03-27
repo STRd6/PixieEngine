@@ -203,5 +203,32 @@ Moogle = (I) ->
               I.active = false
               engine.queue(nextLevel)
     
+    
+  self.bind 'destroy', ->
+    engine.add
+      class: "Emitter"
+      duration: 10
+      sprite: Sprite.EMPTY
+      velocity: Point(0, 0)
+      particleCount: 15
+      batchSize: 5
+      x: object.I.width / 2 + object.I.x
+      y: object.I.height / 2 + object.I.y
+      generator:
+        color: "rgba(200, 140, 235, 0.7)"
+        duration: 15
+        height: (n) ->
+          particleSizes.wrap(n) * 3
+        maxSpeed: 35
+        velocity: (n) ->
+          Point.fromAngle(Random.angle()).scale(rand(5) + 5)
+        width: (n) ->
+          particleSizes.wrap(n) * 3
+          
+    engine.add $.extend(I,
+      x: 64
+      y: 64
+    )
+
   self
 
