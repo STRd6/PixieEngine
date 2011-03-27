@@ -31,7 +31,7 @@ Moogle = (I) ->
     right: "right"
     down: "down"
     left: "left"
-    A: "enter"
+    A: "return"
     B: "space"
   }, {
     up: ","
@@ -42,8 +42,8 @@ Moogle = (I) ->
     B: "1"
   }][I.controller]
 
-  actionDown = (actions...) ->
-    actions.inject false, (down, action)
+  actionDown = (triggers...) ->
+    triggers.inject false, (down, action) ->
       down || keydown[actions[action]]
   
   PHYSICS =
@@ -65,7 +65,7 @@ Moogle = (I) ->
         I.velocity.x -= 2
       unless actionDown("left") || actionDown("right")
         I.velocity.x = 0
-      unless actionDown("up")
+      unless actionDown("up", "A")
         jumping = false
         
       shooting = actionDown("B")

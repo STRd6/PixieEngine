@@ -1,5 +1,5 @@
-window.engine = Engine
-  ambientLight: 0.125
+window.engine = Engine 
+  ambientLight: 0.025
   canvas: $("canvas").powerCanvas()
 
 block = 
