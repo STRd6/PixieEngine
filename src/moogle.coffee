@@ -31,19 +31,20 @@ Moogle = (I) ->
     right: "right"
     down: "down"
     left: "left"
-    A: "up"
+    A: "enter"
     B: "space"
   }, {
     up: ","
     right: "e"
     down: "o"
     left: "a"
-    A: ","
+    A: "2"
     B: "1"
   }][I.controller]
 
-  actionDown = (action) ->
-    keydown[actions[action]]
+  actionDown = (actions...) ->
+    actions.inject false, (down, action)
+      down || keydown[actions[action]]
   
   PHYSICS =
     platform: () ->
@@ -53,7 +54,7 @@ Moogle = (I) ->
         I.velocity.y += GRAVITY.y
       else
 
-        if actionDown "up"
+        if actionDown "up", "A"
           jumping = true
           I.velocity.y = -7 * GRAVITY.y - 2
         
