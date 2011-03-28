@@ -125,11 +125,12 @@ Moogle = (I) ->
           
     engine.add
       class: "Light"
-      color: "rgba(255, 0, 0, 0.25)"
       radius: 50
       x: target.x
       y: target.y
-      duration: 1
+      duration: 3
+      shadows:false
+      step: "I.radius = I.radius / 2"
       
   beams = []
 
@@ -229,14 +230,14 @@ Moogle = (I) ->
           
           engine.add
             class: "Light"
-            intensity: 0.5
+            intensity: 0.66
             radius: 100
             x: I.x + I.width/2 + I.velocity.x
             y: I.y + I.height/2 + I.velocity.y
             duration: 4
             shadows: false
             step: "I.radius = I.radius / 4"
-        
+
           center = self.centeredBounds()
           fireBeam(center, shootDirection, self)
       
