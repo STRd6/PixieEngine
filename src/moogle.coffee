@@ -44,7 +44,7 @@ Moogle = (I) ->
     left: "a"
     A: "2"
     B: "1"
-    C: "Q"
+    C: "'"
   }][I.controller]
 
   actionDown = (triggers...) ->
@@ -73,7 +73,7 @@ Moogle = (I) ->
         if actionDown "left"
           I.velocity.x -= 2
         unless actionDown("left") || actionDown("right")
-          I.velocity.x = 0
+          I.velocity.x = I.velocity.x.approach(0, 2)
         unless actionDown("A")
           jumping = false
           
@@ -199,6 +199,7 @@ Moogle = (I) ->
         if shootDirection && (I.cooldown == 0)
           I.cooldown += 15
           Sound.play("laser")
+          I.velocity = I.velocity.add(shootDirection.norm().scale(-8))
           
           engine.add
             class: "Light"
