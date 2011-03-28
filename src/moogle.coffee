@@ -3,13 +3,15 @@ Moogle = (I) ->
   
   GRAVITY = Point(0, 2)
   SCREEN_WIDTH = 640
-  
+  MAX_SHIELD = 32
+
   $.reverseMerge I,
     controller: 0
     color: "blue"
     cooldown: 0
     destructable: true
     shielding: false
+    shieldStrength: MAX_SHIELD
     speed: 6
     acceleration: Point(0, 0)
     solid: true
@@ -143,6 +145,21 @@ Moogle = (I) ->
         fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject)
       else if hitObject.I.destructable
         hitObject.destroy()
+        
+  shieldGradient = (strength, context) ->
+    radgrad = context.createRadialGradient(4, -4, 0, 0, 0, 16)
+
+    a = 0.75 * strength / MAX_SHIELD
+    edgeAlpha = 0.75 + 0.25 * strength / MAX_SHIELD
+
+    radgrad.addColorStop(0, "rgba(255, 255, 255, #{a})")
+  
+    radgrad.addColorStop(0.25, "rgba(0, 255, 0, #{a})")
+    radgrad.addColorStop(0.9, "rgba(0, 255, 0, #{a})")
+  
+    radgrad.addColorStop(1, "rgba(0, 200, 0, #{edgeAlpha})")
+    
+    radgrad
 
   self = GameObject(I).extend
     illuminate: (canvas) ->
@@ -160,7 +177,8 @@ Moogle = (I) ->
       draw: (canvas) ->
         center = self.centeredBounds()
         if I.shielding
-          canvas.fillCircle(center.x, center.y, 16, "rgba(0, 255, 0, 0.75)")
+          canvas.withTransform Matrix.translation(center.x, center.y), (canvas) ->
+            canvas.fillCircle(0, 0, 16, shieldGradient(I.shieldStrength, canvas.context()))
           
         beams.each (beam) ->
           canvas.strokeColor(I.color)
