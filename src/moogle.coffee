@@ -74,22 +74,23 @@ Moogle = (I) ->
         if actionDown "left"
           I.velocity.x -= 2
           lastDirection = -1
-        unless actionDown("left") || actionDown("right")
-          I.velocity.x = I.velocity.x.approach(0, 2)
         unless actionDown("A")
           jumping = false
           
         shooting = actionDown("B")
-        
+
         ###
           if actionDown "up"
             shooting = true
           if actionDown "down"
             shooting = true
-        ### 
-        
+        ###
+
+      if I.shielding || !(actionDown("left") || actionDown("right"))
+        I.velocity.x = I.velocity.x.approach(0, 2)
+
       I.velocity.x = I.velocity.x.clamp(-8, 8)
-  
+
   physics = PHYSICS.platform
   
   laserColors = [
@@ -133,10 +134,21 @@ Moogle = (I) ->
     
   self = GameObject(I).extend
     illuminate: (canvas) ->
+      center = self.centeredBounds()
+      center.radius = 32
+      
+      if I.shielding
+        canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()))
+    
       if laserEndpoint
-        laserStart = self.centeredBounds()
         canvas.strokeColor("#000")
-        canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2)
+        canvas.drawLine(center.x, center.y, laserEndpoint.x, laserEndpoint.y, 2)
+    
+    after:
+      draw: (canvas) ->
+        center = self.centeredBounds()
+        if I.shielding
+          canvas.fillCircle(center.x, center.y, 16, "rgba(0, 255, 0, 0.75)")
   
     before:
       draw: (canvas) ->
@@ -144,9 +156,6 @@ Moogle = (I) ->
         if laserEndpoint
           canvas.strokeColor I.color
           canvas.drawLine(center.x, center.y, laserEndpoint.x, laserEndpoint.y, 2)
-          
-        if I.shielding
-          canvas.fillCircle(center.x, center.y, 16, "rgba(0, 255, 0, 0.75)")
             
       update: ->
         I.cooldown -= 1 if I.cooldown > 0
