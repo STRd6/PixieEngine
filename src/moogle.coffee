@@ -211,7 +211,6 @@ Moogle = (I) ->
           
           engine.add
             class: "Light"
-            color: "rgba(255, 0, 0, 0.25)"
             intensity: 0.5
             radius: 100
             x: I.x + I.width/2 + I.velocity.x
