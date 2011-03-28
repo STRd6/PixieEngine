@@ -84,10 +84,7 @@ Moogle = (I) ->
             shooting = true
           if actionDown "down"
             shooting = true
-        ###  
-        
-      if I.velocity.x.sign()
-        lastDirection = I.velocity.x.sign() 
+        ### 
         
       I.velocity.x = I.velocity.x.clamp(-8, 8)
   
@@ -183,6 +180,8 @@ Moogle = (I) ->
             shootX += -1
           if actionDown "right"
             shootX += 1
+            
+          lastDirection = shootX unless shootX == 0
           
           if actionDown "up"
             shootY += -1
