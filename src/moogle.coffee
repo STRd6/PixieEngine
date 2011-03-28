@@ -92,14 +92,6 @@ Moogle = (I) ->
 
   physics = PHYSICS.platform
   
-  laserColors = [
-    "rgba(255, 0, 128, 0.75)"
-    "rgba(255, 0, 128, 0.75)"
-    "rgba(255, 0, 128, 0.75)"
-    "rgba(255, 255, 255, 0.25)"
-    "rgba(32, 190, 230, 0.25)"
-  ]
-  
   particleSizes = [2, 8, 4, 6]
   
   laserParticleEffects = (target) ->
