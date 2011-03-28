@@ -67,38 +67,6 @@ Light = (I) ->
           
       return [min, max]
     )(object.I)
-    
-  generateRadialGradient = (I, context, quadratic) ->
-    ###
-      c1 = x: I.x, y: I.y, radius: 0
-      c2 = x: I.x, y: I.y, radius: I.radius
-      
-      stops =
-        0: "#000"
-        1: "rgba(0, 0, 0, 0)"
-      
-      if quadratic
-        $.extend stops,
-          "0.25": "rgba(0, 0, 0, 0.5625)"
-          "0.5": "rgba(0, 0, 0, 0.25)"
-          "0.75": "rgba(0, 0, 0, 0.0625)"
-  
-      canvas.buildRadialGradient(c1, c2, stops)
-    ###
-    
-    radgrad = context.createRadialGradient(I.x, I.y, 0, I.x, I.y, I.radius)
-    
-    radgrad.addColorStop(0, "#000")
-
-    if quadratic
-      radgrad.addColorStop(0.25, "rgba(0, 0, 0, 0.5625)")
-      radgrad.addColorStop(0.5, "rgba(0, 0, 0, 0.25)")
-      radgrad.addColorStop(0.75, "rgba(0, 0, 0, 0.0625)")
-
-    radgrad.addColorStop(1, "rgba(0, 0, 0, 0)")
-    
-    radgrad
-    
 
   self = GameObject(I).extend
     draw: (canvas) ->
@@ -110,7 +78,7 @@ Light = (I) ->
       shadowContext.globalCompositeOperation = "source-over"
       shadowCanvas.clear()
 
-      radgrad = generateRadialGradient(I, shadowContext, true)
+      radgrad = Light.radialGradient(I, shadowContext, true)
       shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
       if I.shadows
@@ -136,4 +104,35 @@ Light = (I) ->
           
       shadows = shadowCanvas.element()
       canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+
+Light.radialGradient = (c, context, quadratic) ->
+  ###
+    c1 = x: c.x, y: c.y, radius: 0
+    c2 = x: c.x, y: c.y, radius: c.radius
+    
+    stops =
+      0: "#000"
+      1: "rgba(0, 0, 0, 0)"
+    
+    if quadratic
+      $.extend stops,
+        "0.25": "rgba(0, 0, 0, 0.5625)"
+        "0.5": "rgba(0, 0, 0, 0.25)"
+        "0.75": "rgba(0, 0, 0, 0.0625)"
+
+    canvas.buildRadialGradient(c1, c2, stops)
+  ###
+  
+  radgrad = context.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.radius)
+  
+  radgrad.addColorStop(0, "#000")
+
+  if quadratic
+    radgrad.addColorStop(0.25, "rgba(0, 0, 0, 0.5625)")
+    radgrad.addColorStop(0.5, "rgba(0, 0, 0, 0.25)")
+    radgrad.addColorStop(0.75, "rgba(0, 0, 0, 0.0625)")
+
+  radgrad.addColorStop(1, "rgba(0, 0, 0, 0)")
+  
+  radgrad
 
