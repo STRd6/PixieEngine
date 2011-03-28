@@ -161,13 +161,12 @@ Moogle = (I) ->
         center = self.centeredBounds()
         if I.shielding
           canvas.fillCircle(center.x, center.y, 16, "rgba(0, 255, 0, 0.75)")
-  
-    before:
-      draw: (canvas) ->
+          
         beams.each (beam) ->
           canvas.strokeColor(I.color)
           canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
-            
+  
+    before:
       update: ->
         beams = []
         I.cooldown -= 1 if I.cooldown > 0
