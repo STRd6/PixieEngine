@@ -140,7 +140,7 @@ Moogle = (I) ->
 
     if hitObject?.I
       if hitObject.I.shielding
-        ;
+        fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject)
       else if hitObject.I.destructable
         hitObject.destroy()
 
@@ -264,11 +264,12 @@ Moogle = (I) ->
         width: (n) ->
           particleSizes.wrap(n) * 3
           
+    # Respawn
     engine.add $.extend({}, I,
       x: [64, 256, 320, 512].rand()
       y: -I.height
     )
-    
+
     I.active = false
 
   self
