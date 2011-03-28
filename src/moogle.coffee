@@ -70,8 +70,10 @@ Moogle = (I) ->
         # Move around based on input
         if actionDown "right"
           I.velocity.x += 2
+          lastDirection = 1
         if actionDown "left"
           I.velocity.x -= 2
+          lastDirection = -1
         unless actionDown("left") || actionDown("right")
           I.velocity.x = I.velocity.x.approach(0, 2)
         unless actionDown("A")
@@ -180,8 +182,6 @@ Moogle = (I) ->
             shootX += -1
           if actionDown "right"
             shootX += 1
-            
-          lastDirection = shootX unless shootX == 0
           
           if actionDown "up"
             shootY += -1
