@@ -27,7 +27,6 @@ Moogle = (I) ->
   falling = true
   lastDirection = 1
   shooting = false
-  laserEndpoint = null
 
   actions = [{
     up: "up"
@@ -222,8 +221,6 @@ Moogle = (I) ->
             shootDirection = Point(lastDirection, 0)
           else
             shootDirection = Point(shootX, shootY)
-
-        laserEndpoint = null
           
         if shootDirection && (I.cooldown == 0)
           I.cooldown += 15
