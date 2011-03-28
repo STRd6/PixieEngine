@@ -111,8 +111,8 @@ Moogle = (I) ->
       velocity: Point(0, 0)
       particleCount: 2
       batchSize: 5
-      x: laserEndpoint.x
-      y: laserEndpoint.y
+      x: target.x
+      y: target.y
       generator:
         color: Color(255, 0, 0, 0.5)
         duration: 3
@@ -128,10 +128,30 @@ Moogle = (I) ->
       class: "Light"
       color: "rgba(255, 0, 0, 0.25)"
       radius: 50
-      x: laserEndpoint.x
-      y: laserEndpoint.y
+      x: target.x
+      y: target.y
       duration: 1
-    
+      
+  beams = []
+
+  fireBeam = (sourcePoint, direction, sourceObject) ->
+    if nearestHit = engine.rayCollides(sourcePoint, direction, sourceObject)
+      endPoint = nearestHit
+      hitObject = nearestHit.object
+
+    if endPoint
+      laserParticleEffects(endPoint)
+    else
+      endPoint = direction.norm().scale(1000).add(sourcePoint)
+
+    beams.push [sourcePoint, endPoint]
+
+    if hitObject?.I
+      if hitObject.I.shielding
+        ;
+      else if hitObject.I.destructable
+        hitObject.destroy()
+
   self = GameObject(I).extend
     illuminate: (canvas) ->
       center = self.centeredBounds()
@@ -140,9 +160,9 @@ Moogle = (I) ->
       if I.shielding
         canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()))
     
-      if laserEndpoint
+      beams.each (beam) ->
         canvas.strokeColor("#000")
-        canvas.drawLine(center.x, center.y, laserEndpoint.x, laserEndpoint.y, 2)
+        canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
     
     after:
       draw: (canvas) ->
@@ -152,13 +172,14 @@ Moogle = (I) ->
   
     before:
       draw: (canvas) ->
-        center = self.centeredBounds()
-        if laserEndpoint
-          canvas.strokeColor I.color
-          canvas.drawLine(center.x, center.y, laserEndpoint.x, laserEndpoint.y, 2)
+        beams.each (beam) ->
+          canvas.strokeColor(I.color)
+          canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
             
       update: ->
+        beams = []
         I.cooldown -= 1 if I.cooldown > 0
+
         if engine.collides(self.bounds(0, 1), self)
           falling = false
         else
@@ -215,27 +236,12 @@ Moogle = (I) ->
             radius: 100
             x: I.x + I.width/2 + I.velocity.x
             y: I.y + I.height/2 + I.velocity.y
-            duration: 3
+            duration: 4
             shadows: false
-            step: ->
-              I.radius = I.radius / 2
+            step: "I.radius = I.radius / 4"
         
           center = self.centeredBounds()
-          if nearestHit = engine.rayCollides(center, shootDirection, self)
-            laserEndpoint = nearestHit
-            object = nearestHit.object
-
-          if laserEndpoint
-            laserParticleEffects(laserEndpoint)
-
-          else
-            laserEndpoint = shootDirection.norm().scale(1000).add(I)
-                  
-        if object?.I
-          if object.I.shielding
-            ;
-          else if object.I.destructable
-            object.destroy()
+          fireBeam(center, shootDirection, self)
       
         engine.eachObject (object) ->
           if object.I.open && Collision.rectangular(I, object.bounds())
