@@ -131,7 +131,7 @@ if(true) {
     var soundPath = "http://pixie.strd6.com/production/projects/8/sounds/";
     
     function pathForPixieId(id) {
-      return soundPath + id + ".wav";
+      return soundPath + id + ".mp3";
     }
   
     /**
