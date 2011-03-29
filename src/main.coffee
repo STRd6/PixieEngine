@@ -26,6 +26,21 @@ else if level1
 
 engine.start()
 
+# Player Spawner
+engine.bind "update", ->
+  CONTROLLERS.each (controller, i) ->
+    if controller.actionDown "D"
+      exists = false
+      engine.eachObject (o) ->
+        exists ||= o.I.controller == i
+
+      unless exists
+        engine.add
+          class: "Moogle"
+          controller: i
+          x: [64, 256, 320, 512].rand()
+          y: -16
+
 developer = false
 
 objectToUpdate = null
