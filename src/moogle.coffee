@@ -173,11 +173,15 @@ Moogle = (I) ->
   self = GameObject(I).extend
     illuminate: (canvas) ->
       center = self.centeredBounds()
-      center.radius = 32
-      
+
+      if I.disabled
+        center.radius = rand(16) + 16
+      else
+        center.radius = 32
+
       if I.shielding || I.disabled
         canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()))
-    
+
       beams.each (beam) ->
         canvas.strokeColor("#000")
         canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2.25)
@@ -199,6 +203,9 @@ Moogle = (I) ->
         beams = []
         I.cooldown -= 1 if I.cooldown > 0
         I.disabled -= 1 if I.disabled > 0
+        
+        if I.disabled
+          I.velocity = I.velocity.add(Point.fromAngle(Random.angle()).scale(rand(4)))
 
         if engine.collides(self.bounds(0, 1), self)
           falling = false
@@ -260,7 +267,7 @@ Moogle = (I) ->
 
           center = self.centeredBounds()
           fireBeam(center, shootDirection, self)
-      
+
         if (I.disabled % 4) == 3
           engine.add
             class: "Emitter"
@@ -269,18 +276,18 @@ Moogle = (I) ->
             velocity: Point(0, 0)
             particleCount: 9
             batchSize: 5
-            x: I.width / 2 + I.x
-            y: I.height / 2 + I.y
+            x: I.x
+            y: I.y
             generator:
-              color: "rgba(200, 140, 235, 0.7)"
+              color: I.color
               duration: 15
               height: (n) ->
-                particleSizes.rand() / 2
-              maxSpeed: 35
+                particleSizes.rand()
+              maxSpeed: 5
               velocity: (n) ->
                 Point.fromAngle(Random.angle()).scale(rand(3) + 2)
               width: (n) ->
-                particleSizes.rand() / 2
+                particleSizes.rand()
 
         I.x = I.x.clamp(0, SCREEN_WIDTH - I.width)
             
@@ -306,7 +313,7 @@ Moogle = (I) ->
           Point.fromAngle(Random.angle()).scale(rand(5) + 5)
         width: (n) ->
           particleSizes.wrap(n) * 3
-          
+
     # Respawn
     engine.add $.extend({}, I,
       x: [64, 256, 320, 512].rand()
