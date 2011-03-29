@@ -26,8 +26,8 @@ else if level1
 
 engine.start()
 
-# Player Spawner
 engine.bind "update", ->
+  # Player Spawner
   CONTROLLERS.each (controller, i) ->
     if controller.actionDown "D"
       exists = false
@@ -40,6 +40,11 @@ engine.bind "update", ->
           controller: i
           x: [64, 256, 320, 512].rand()
           y: -16
+
+  # Camera Tracking
+  engine.eachObject (o) ->
+    if o.I.camera
+      engine.cameraTransform o.cameraTransform()
 
 developer = false
 
