@@ -21,8 +21,8 @@ Controller = (actions) ->
   left: "left"
   A: "home"
   B: "end"
-  C: "pageup"
-  D: "pagedown"
+  C: "pagedown"
+  D: "pageup"
 }, {
   up: "o"
   right: "q"
