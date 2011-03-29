@@ -10,6 +10,7 @@ Moogle = (I) ->
     color: "blue"
     cooldown: 0
     destructable: true
+    disabled: 0
     shielding: false
     shieldStrength: MAX_SHIELD
     speed: 6
@@ -57,7 +58,7 @@ Moogle = (I) ->
   PHYSICS =
     platform: () ->
       I.shielding = false
-    
+
       if jumping
         I.velocity.y += GRAVITY.scale(0.5).y
       else if falling
@@ -67,9 +68,15 @@ Moogle = (I) ->
           jumping = true
           I.velocity.y = -7 * GRAVITY.y - 2
         else if actionDown "C"
-          I.shielding = true
-        
-      unless I.shielding
+          if I.shieldStrength > 0
+            I.shielding = true
+            I.shieldStrength -= 1
+          else
+            I.disabled = MAX_SHIELD * 3
+
+      unless I.shielding || I.disabled
+        I.shieldStrength = I.shieldStrength.approach(MAX_SHIELD, 0.25)
+
         # Move around based on input
         if actionDown "right"
           I.velocity.x += 2
@@ -168,7 +175,7 @@ Moogle = (I) ->
       center = self.centeredBounds()
       center.radius = 32
       
-      if I.shielding
+      if I.shielding || I.disabled
         canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()))
     
       beams.each (beam) ->
@@ -181,7 +188,8 @@ Moogle = (I) ->
         if I.shielding
           canvas.withTransform Matrix.translation(center.x, center.y), (canvas) ->
             canvas.fillCircle(0, 0, 16, shieldGradient(I.shieldStrength, canvas.context()))
-          
+
+        # TODO: Move beams to top layer
         beams.each (beam) ->
           canvas.strokeColor(I.color)
           canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
@@ -190,6 +198,7 @@ Moogle = (I) ->
       update: ->
         beams = []
         I.cooldown -= 1 if I.cooldown > 0
+        I.disabled -= 1 if I.disabled > 0
 
         if engine.collides(self.bounds(0, 1), self)
           falling = false
@@ -252,11 +261,26 @@ Moogle = (I) ->
           center = self.centeredBounds()
           fireBeam(center, shootDirection, self)
       
-        engine.eachObject (object) ->
-          if object.I.open && Collision.rectangular(I, object.bounds())
-            if I.active
-              I.active = false
-              engine.queue(nextLevel)
+        if (I.disabled % 4) == 3
+          engine.add
+            class: "Emitter"
+            duration: 5
+            sprite: Sprite.EMPTY
+            velocity: Point(0, 0)
+            particleCount: 9
+            batchSize: 5
+            x: I.width / 2 + I.x
+            y: I.height / 2 + I.y
+            generator:
+              color: "rgba(200, 140, 235, 0.7)"
+              duration: 15
+              height: (n) ->
+                particleSizes.rand() / 2
+              maxSpeed: 35
+              velocity: (n) ->
+                Point.fromAngle(Random.angle()).scale(rand(3) + 2)
+              width: (n) ->
+                particleSizes.rand() / 2
 
         I.x = I.x.clamp(0, SCREEN_WIDTH - I.width)
             
@@ -274,7 +298,7 @@ Moogle = (I) ->
       y: I.height / 2 + I.y
       generator:
         color: "rgba(200, 140, 235, 0.7)"
-        duration: 15
+        duration: 3
         height: (n) ->
           particleSizes.wrap(n) * 3
         maxSpeed: 35
@@ -287,6 +311,8 @@ Moogle = (I) ->
     engine.add $.extend({}, I,
       x: [64, 256, 320, 512].rand()
       y: -I.height
+      disabled: 0
+      shieldStrength: MAX_SHIELD
     )
 
     I.active = false
