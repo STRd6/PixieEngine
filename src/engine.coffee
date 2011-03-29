@@ -159,5 +159,9 @@
         I.FPS = newFPS
         self.stop()
         self.start()
+        
+    self.include Bindable
+    
+    self
 )(jQuery)
 
