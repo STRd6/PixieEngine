@@ -13,6 +13,7 @@ Controller = (actions) ->
     triggers.inject false, (down, action) ->
       down || keydown[actions[action]]
 
+CONTROLLERS = []
 # Dvorak Keyboard layout controllers
 [{
   up: "up"
@@ -78,5 +79,5 @@ Controller = (actions) ->
   C: "backspace"
   D: "\\"
 }].each (actions, i) ->
-  Controller[i] = Controller(actions)
+  CONTROLLERS[i] = Controller(actions)
 
