@@ -137,6 +137,8 @@ var Sound = (function($) {
 
   function loadSoundChannel(name) {
     var sound = $('<audio />').get(0);
+    sound.autobuffer = true;
+    sound.preload = 'auto';
     sound.src = soundPath + name + format;
 
     return sound;
