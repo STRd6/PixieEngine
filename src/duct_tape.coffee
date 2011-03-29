@@ -126,12 +126,12 @@
 
 })( jQuery );
  
-if(false) {
+if(true) {
   (function() {
-    var soundPath = "http://s3.amazonaws.com/images.pixie.strd6.com/sounds/";
+    var soundPath = "http://pixie.strd6.com/production/projects/8/sounds/";
     
     function pathForPixieId(id) {
-      return soundPath + id + "/original.mp3";
+      return soundPath + id + ".wav";
     }
   
     /**
@@ -150,6 +150,7 @@ if(false) {
   
       options.id = pixieId;
       options.url = pathForPixieId(pixieId);
+      options.multishot = true
       
       return soundManager.createSound(options);
     }
