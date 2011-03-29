@@ -7,20 +7,19 @@ Light = (I) ->
     radius: 500
     shadows: true
   
-  shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
-  
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
     
-  fillShape = (context, p1, p2, p3, p4) ->
+  fillShape = (context, points...) ->
     context.fillStyle = "rgba(0, 0, 0, 1)"
     context.beginPath()
-    context.moveTo(p1.x, p1.y)
-    context.lineTo(p2.x, p2.y)
-    context.lineTo(p3.x, p3.y)
-    context.lineTo(p4.x, p4.y)
-    context.lineTo(p1.x, p1.y)
+    points.each (point, i) ->
+      if i == 0
+        context.moveTo(point.x, point.y)
+      else
+        context.lineTo(point.x, point.y)
+    context.lineTo points[0].x, points[0].y
     context.fill()
 
   corners = (object) ->
@@ -73,12 +72,13 @@ Light = (I) ->
       #canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
+      shadowCanvas = Light.shadowCanvas()
       shadowContext = shadowCanvas.context()
       shadowContext.globalAlpha = I.intensity
       shadowContext.globalCompositeOperation = "source-over"
       shadowCanvas.clear()
 
-      radgrad = Light.radialGradient(I, shadowContext, true)
+      radgrad = Light.radialGradient(I, shadowContext, false)
       shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
       if I.shadows
@@ -104,6 +104,12 @@ Light = (I) ->
           
       shadows = shadowCanvas.element()
       canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+
+( ->
+  canvas = $("<canvas width=640 height=480 />").powerCanvas()
+  Light.shadowCanvas = ->
+    canvas
+)()
 
 Light.radialGradient = (c, context, quadratic) ->
   ###
