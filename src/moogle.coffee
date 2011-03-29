@@ -152,6 +152,7 @@ Moogle = (I) ->
     if hitObject?.I
       if hitObject.I.shielding
         fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject)
+        hitObject.I.shieldStrength -= 5
       else if hitObject.I.destructable
         hitObject.destroy()
         
