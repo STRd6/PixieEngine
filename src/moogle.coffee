@@ -33,27 +33,7 @@ Moogle = (I) ->
   lastDirection = 1
   shooting = false
 
-  actions = [{
-    up: "up"
-    right: "right"
-    down: "down"
-    left: "left"
-    A: "return"
-    B: "space"
-    C: "pageup"
-  }, {
-    up: ","
-    right: "e"
-    down: "o"
-    left: "a"
-    A: "2"
-    B: "1"
-    C: "'"
-  }][I.controller]
-
-  actionDown = (triggers...) ->
-    triggers.inject false, (down, action) ->
-      down || keydown[actions[action]]
+  actionDown = Controller[I.controller].actionDown
   
   PHYSICS =
     platform: () ->
