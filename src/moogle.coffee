@@ -4,6 +4,15 @@ Moogle = (I) ->
   GRAVITY = Point(0, 2)
   SCREEN_WIDTH = 640
   MAX_SHIELD = 32
+  PLAYER_COLORS = [
+    "#00F"
+    "#F00"
+    "#0F0"
+    "#FF0"
+    "#FFF"
+    "#F0F"
+    "#0FF"
+  ]
 
   $.reverseMerge I,
     controller: 0
@@ -28,12 +37,13 @@ Moogle = (I) ->
   # I.sprite = Sprite.fromPixieId(12525)
   I.sprite = null
 
+  I.color = PLAYER_COLORS[I.controller]
+  actionDown = Controller[I.controller].actionDown
+
   jumping = false
   falling = true
   lastDirection = 1
   shooting = false
-
-  actionDown = Controller[I.controller].actionDown
   
   PHYSICS =
     platform: () ->
