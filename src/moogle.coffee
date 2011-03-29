@@ -171,7 +171,7 @@ Moogle = (I) ->
     
       beams.each (beam) ->
         canvas.strokeColor("#000")
-        canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
+        canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2.25)
     
     after:
       draw: (canvas) ->
@@ -239,11 +239,11 @@ Moogle = (I) ->
           
           engine.add
             class: "Light"
-            intensity: 0.66
+            intensity: 0.75
             radius: 100
             x: I.x + I.width/2 + I.velocity.x
             y: I.y + I.height/2 + I.velocity.y
-            duration: 4
+            duration: 6
             shadows: false
             step: "I.radius = I.radius / 4"
 
