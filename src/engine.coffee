@@ -1,11 +1,12 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
-    backgroundColor: "#FFFFFF"
     ambientLight: 1
-    
+    backgroundColor: "#FFFFFF"
+    cameraTransform: Matrix.IDENTITY
+
   shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
- 
+
   window.Engine = (I) ->
     $.reverseMerge I, defaults
   
@@ -16,8 +17,6 @@
 
     queuedObjects = []
     objects = []
-
-    cameraTransform = Matrix.IDENTITY
   
     update = ->
       objects = objects.select (object) ->
@@ -38,11 +37,11 @@
   
         # Etch out the light
         shadowContext.globalCompositeOperation = "destination-out"
-        shadowCanvas.withTransform cameraTransform, (shadowCanvas) ->
+        shadowCanvas.withTransform I.cameraTransform, (shadowCanvas) ->
           objects.each (object, i) ->
             object.illuminate?(shadowCanvas)
 
-      canvas.withTransform cameraTransform, (canvas) ->
+      canvas.withTransform I.cameraTransform, (canvas) ->
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
         objects.invoke("draw", canvas)
@@ -162,6 +161,7 @@
         self.stop()
         self.start()
     
+    self.attrAccessor "cameraTransform"
     self.include Bindable
     
     return self
