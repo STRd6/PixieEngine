@@ -23,6 +23,7 @@ Moogle = (I) ->
     excludedModules: ["Movable"]
     height: 24
     opaque: true
+    score: 0
     shielding: false
     shieldStrength: MAX_SHIELD
     speed: 6
@@ -110,7 +111,7 @@ Moogle = (I) ->
       
       canvas.fillColor "#FFF"
       canvas.fillText "PLAYER #{I.controller + 1}", 5, 12
-      canvas.fillText "SCORE: #{I.age}", 5, 28
+      canvas.fillText "SCORE: #{I.score}", 5, 28
   
   laserParticleEffects = (target) ->
     engine.add
@@ -161,6 +162,11 @@ Moogle = (I) ->
         fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject)
         hitObject.I.shieldStrength -= 5
       else if hitObject.I.destructable
+        if hitObject == self
+          I.score -= 1
+        else if hitObject.I.class == I.class
+          I.score += 1
+
         hitObject.destroy()
         
   shieldGradient = (strength, context) ->
