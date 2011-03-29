@@ -19,10 +19,10 @@ engine.add
   x: 320
   y: 240
 
-if level = Local.get("level")
+if false && (level = Local.get("level"))
   engine.loadState level
 else if level1
-  engine.loadState level1
+  engine.loadState level3
 
 engine.start()
 
