@@ -75,8 +75,8 @@ Controller = (actions) ->
   left: "/"
   A: "]"
   B: "["
-  C: "\\"
-  D: "backspace"
+  C: "backspace"
+  D: "\\"
 }].each (actions, i) ->
   Controller[i] = Controller(actions)
 
