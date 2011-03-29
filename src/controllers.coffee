@@ -9,7 +9,7 @@ Controller = (actions) ->
     C: "pageup"
     D: "pagedown"
 
-  actionDown = (triggers...) ->
+  actionDown: (triggers...) ->
     triggers.inject false, (down, action) ->
       down || keydown[actions[action]]
 
@@ -75,7 +75,7 @@ Controller = (actions) ->
   left: "/"
   A: "]"
   B: "["
-  C: "\"
+  C: "\\"
   C: "backspace"
 }].each (actions, i) ->
   Controller[i] = Controller(actions)
