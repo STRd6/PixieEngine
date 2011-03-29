@@ -25,6 +25,7 @@ Moogle = (I) ->
   I.velocity = Point(I.velocity.x, I.velocity.y)
   
   # I.sprite = Sprite.fromPixieId(12525)
+  I.sprite = null
 
   jumping = false
   falling = true
