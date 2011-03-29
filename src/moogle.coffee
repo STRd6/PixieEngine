@@ -23,7 +23,8 @@ Moogle = (I) ->
   # Cast acceleration and velocity to points
   I.acceleration = Point(I.acceleration.x, I.acceleration.y)
   I.velocity = Point(I.velocity.x, I.velocity.y)
-  I.sprite = Sprite.fromPixieId(12525)
+  
+  # I.sprite = Sprite.fromPixieId(12525)
 
   jumping = false
   falling = true
