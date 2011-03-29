@@ -25,6 +25,8 @@
         
       objects = objects.concat(queuedObjects)
       queuedObjects = []
+      
+      self.trigger "update"
 
     draw = ->
       if I.ambientLight < 1
