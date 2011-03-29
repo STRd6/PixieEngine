@@ -78,7 +78,7 @@ Light = (I) ->
       shadowContext.globalCompositeOperation = "source-over"
       shadowCanvas.clear()
 
-      radgrad = Light.radialGradient(I, shadowContext, false)
+      radgrad = Light.radialGradient(I, shadowContext, true)
       shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
       if I.shadows
