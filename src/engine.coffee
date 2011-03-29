@@ -6,6 +6,9 @@
     cameraTransform: Matrix.IDENTITY
 
   shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
+  hudCanvas = $("<canvas width=640 height=480 />").powerCanvas()
+
+  hudCanvas.font("bold 9pt consolas, 'Courier New', 'andale mono', 'lucida console', monospace")
 
   window.Engine = (I) ->
     $.reverseMerge I, defaults
@@ -41,14 +44,19 @@
           objects.each (object, i) ->
             object.illuminate?(shadowCanvas)
 
+      hudCanvas.clear()
       canvas.withTransform I.cameraTransform, (canvas) ->
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
-        objects.invoke("draw", canvas)
+
+        objects.invoke("draw", canvas, hudCanvas)
 
       if I.ambientLight < 1
         shadows = shadowCanvas.element()
         canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)      
+
+      hud = hudCanvas.element()
+      canvas.drawImage hud, 0, 0, hud.width, hud.height, 0, 0, hud.width, hud.height
 
     step = ->
       unless paused

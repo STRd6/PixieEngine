@@ -1,12 +1,17 @@
 Camera = (I) ->
   I ||= {}
-  
-  # TODO globalize width/height
-  $.reverseMerge I,
-    width: 640
-    height: 480
+
+  $.extend I,
+    camera: true
+    solid: false
+    width: 320
+    height: 240
 
   self = GameObject(I).extend
+    draw: (canvas) ->
+      canvas.fillColor "rgba(0, 255, 255, 0.25)"
+      canvas.fillRect(0, 0, I.width, I.height)
+
     cameraTransform: ->
-      Matrix.translation(I.width / 2 - I.x, I.height / 2 I.y)
+      Matrix.translation(-I.x, -I.y)
 
