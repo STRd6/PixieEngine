@@ -95,6 +95,23 @@ Moogle = (I) ->
   
   particleSizes = [2, 8, 4, 6]
   
+  drawHud = (canvas) ->
+    screenPadding = 5
+    hudWidth = 80
+    hudHeight = 40
+    hudMargin = 10
+  
+    canvas.withTransform Matrix.translation(I.controller * (hudWidth + hudMargin) + screenPadding, 0), (canvas) ->
+      color = Color(I.color)
+      color.a 0.5
+      
+      canvas.fillColor color
+      canvas.fillRoundRect 0, -5, hudWidth, hudHeight
+      
+      canvas.fillColor "#FFF"
+      canvas.fillText "PLAYER #{I.controller + 1}", 5, 12
+      canvas.fillText "SCORE: #{I.age}", 5, 28
+  
   laserParticleEffects = (target) ->
     engine.add
       class: "Emitter"
@@ -178,7 +195,7 @@ Moogle = (I) ->
         canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2.25)
     
     after:
-      draw: (canvas) ->
+      draw: (canvas, hud) ->
         center = self.centeredBounds()
         if I.shielding
           canvas.withTransform Matrix.translation(center.x, center.y), (canvas) ->
@@ -188,6 +205,8 @@ Moogle = (I) ->
         beams.each (beam) ->
           canvas.strokeColor(I.color)
           canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
+          
+        drawHud hud
   
     before:
       update: ->
