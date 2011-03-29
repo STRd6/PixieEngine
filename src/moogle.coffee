@@ -9,26 +9,26 @@ Moogle = (I) ->
     "#F00"
     "#0F0"
     "#FF0"
-    "#FFF"
+    "orange"
     "#F0F"
     "#0FF"
   ]
 
   $.reverseMerge I,
+    acceleration: Point(0, 0)
     controller: 0
-    color: "blue"
     cooldown: 0
     destructable: true
     disabled: 0
+    excludedModules: ["Movable"]
+    height: 24
+    opaque: true
     shielding: false
     shieldStrength: MAX_SHIELD
     speed: 6
-    acceleration: Point(0, 0)
     solid: true
-    width: 16
-    height: 24
     velocity: Point(0, 0)
-    excludedModules: ["Movable"]
+    width: 16
 
   # Cast acceleration and velocity to points
   I.acceleration = Point(I.acceleration.x, I.acceleration.y)
