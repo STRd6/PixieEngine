@@ -38,7 +38,7 @@ Moogle = (I) ->
   I.sprite = null
 
   I.color = PLAYER_COLORS[I.controller]
-  actionDown = Controller[I.controller].actionDown
+  actionDown = CONTROLLERS[I.controller].actionDown
 
   jumping = false
   falling = true
