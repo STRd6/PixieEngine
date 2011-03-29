@@ -1,5 +1,10 @@
 Camera = (I) ->
   I ||= {}
+  
+  # TODO globalize width/height
+  $.reverseMerge I,
+    width: 640
+    height: 480
 
   self = GameObject(I).extend
     cameraTransform: ->
