@@ -31,7 +31,7 @@ Controller = (actions) ->
   A: "2"
   B: "1"
   C: "'"
-  C: ","
+  D: ","
 }, {
   up: "u"
   right: "k"
@@ -40,7 +40,7 @@ Controller = (actions) ->
   A: "4"
   B: "3"
   C: "."
-  C: "p"
+  D: "p"
 }, {
   up: "d"
   right: "b"
@@ -49,7 +49,7 @@ Controller = (actions) ->
   A: "6"
   B: "5"
   C: "y"
-  C: "f"
+  D: "f"
 }, {
   up: "t"
   right: "w"
@@ -58,7 +58,7 @@ Controller = (actions) ->
   A: "8"
   B: "7"
   C: "g"
-  C: "c"
+  D: "c"
 }, {
   up: "s"
   right: "z"
@@ -67,7 +67,7 @@ Controller = (actions) ->
   A: "0"
   B: "9"
   C: "r"
-  C: "l"
+  D: "l"
 }, {
   up: "="
   right: "return"
@@ -76,7 +76,7 @@ Controller = (actions) ->
   A: "]"
   B: "["
   C: "\\"
-  C: "backspace"
+  D: "backspace"
 }].each (actions, i) ->
   Controller[i] = Controller(actions)
 
