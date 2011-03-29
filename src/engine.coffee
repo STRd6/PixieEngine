@@ -64,7 +64,7 @@
       else
         GameObject(entityData)
   
-    self =
+    self = Core(I).extend
       add: (entityData) ->
         obj = construct entityData
         
@@ -159,9 +159,9 @@
         I.FPS = newFPS
         self.stop()
         self.start()
-        
+    
     self.include Bindable
     
-    self
+    return self
 )(jQuery)
 
