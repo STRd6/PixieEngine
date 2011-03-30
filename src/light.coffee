@@ -1,12 +1,13 @@
 Light = (I) ->
   I ||= {}
-  
+
   $.reverseMerge I,
+    cacheStatic: false
     intensity: 1
     color: "orange"
     radius: 500
     shadows: true
-  
+
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
@@ -61,16 +62,16 @@ Light = (I) ->
       #canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
-      shadowCanvas = Light.shadowCanvas()
-      shadowContext = shadowCanvas.context()
-      shadowContext.globalAlpha = I.intensity
-      shadowContext.globalCompositeOperation = "source-over"
-      shadowCanvas.clear()
-
-      radgrad = Light.radialGradient(I, shadowContext, true)
-      shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
+      radgrad = Light.radialGradient(I, canvas.context(), true)
 
       if I.shadows
+        shadowCanvas = Light.shadowCanvas()
+        shadowContext = shadowCanvas.context()
+        shadowContext.globalAlpha = I.intensity
+        shadowContext.globalCompositeOperation = "source-over"
+        shadowCanvas.clear()
+        shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
+      
         shadowContext.globalAlpha = 1
         shadowContext.globalCompositeOperation = "destination-out"
         shadowCanvas.fillColor('#000')
@@ -92,8 +93,10 @@ Light = (I) ->
             shadowCanvas.fillShape veryFar[0], farCorners[0], farCorners[1], veryFar[1]
 
 
-      shadows = shadowCanvas.element()
-      canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+        shadows = shadowCanvas.element()
+        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+      else
+        canvas.fillCircle(I.x, I.y, I.radius, radgrad)
 
 ( ->
   canvas = $("<canvas width=640 height=480 />").powerCanvas()
