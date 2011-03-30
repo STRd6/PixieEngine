@@ -398,6 +398,16 @@ if(false) {
         context.fillRect(x, y, width, height)
 
         return this
+    
+      fillShape: (points...) ->
+        context.beginPath()
+        points.each (point, i) ->
+          if i == 0
+            context.moveTo(point.x, point.y)
+          else
+            context.lineTo(point.x, point.y)
+        context.lineTo points[0].x, points[0].y
+        context.fill()
 
       ###*
       * Adapted from http://js-bits.blogspot.com/2010/07/canvas-rounded-corner-rectangles.html
