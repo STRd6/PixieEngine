@@ -46,7 +46,6 @@
               shadowContext.globalAlpha = 1
               object.illuminate(shadowCanvas)
 
-      hudCanvas.clear()
       canvas.withTransform I.cameraTransform, (canvas) ->
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
