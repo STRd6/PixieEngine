@@ -306,6 +306,20 @@ if(false) {
       
       element: ->
         canvas
+        
+      globalAlpha: (newVal) ->
+        if newVal?
+          context.globalAlpha = newVal
+          return this
+        else
+          context.globalAlpha
+          
+      compositeOperation: (newVal) ->
+        if newVal?
+          context.globalCompositeOperation = newVal
+          return this
+        else
+          context.globalCompositeOperation
       
       createLinearGradient: (x0, y0, x1, y1) ->
         context.createLinearGradient(x0, y0, x1, y1)

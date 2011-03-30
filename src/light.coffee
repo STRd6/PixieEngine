@@ -8,6 +8,13 @@ Light = (I) ->
     radius: 500
     shadows: true
 
+  if I.shadows
+    I.cacheStatic = true
+ 
+  if I.cacheStatic
+    cacheBuilt = false
+    cachedShadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
+
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
@@ -56,51 +63,89 @@ Light = (I) ->
           
       return [min, max]
     )(object.I)
+    
+  drawLightSource = (canvas) ->
+    context = canvas.context()
+    context.globalAlpha = I.intensity
+
+    radgrad = Light.radialGradient(I, context, true)
+    canvas.fillCircle(I.x, I.y, I.radius, radgrad)
+    
+  setCanvasToRemove = (canvas) ->
+    canvas
+      .globalAlpha(1)
+      .compositeOperation("destination-out")
+      .fillColor("#000")
+      
+  drawObjectShadows = (object, canvas) ->
+    farCorners = farthestCorners(object, canvas)
+
+    veryFar = [
+      farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0])
+      farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
+    ]
+
+    canvas.fillShape veryFar[0], farCorners[0], farCorners[1], veryFar[1]
 
   self = GameObject(I).extend
     draw: (canvas) ->
       #canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
-      radgrad = Light.radialGradient(I, canvas.context(), true)
-
       if I.shadows
-        shadowCanvas = Light.shadowCanvas()
-        shadowContext = shadowCanvas.context()
-        shadowContext.globalAlpha = I.intensity
-        shadowContext.globalCompositeOperation = "source-over"
-        shadowCanvas.clear()
-        shadowCanvas.fillCircle(I.x, I.y, I.radius, radgrad)
-      
-        shadowContext.globalAlpha = 1
-        shadowContext.globalCompositeOperation = "destination-out"
-        shadowCanvas.fillColor('#000')
-  
+        if I.cacheStatic
+          if cacheBuilt
+            staticCanvas = null
+            mobileCanvas = Light.shadowCanvas()
+            mobileCanvas
+              .globalAlpha(1)
+              .compositeOperation("source-over")
+            cached = cachedShadowCanvas.element()
+            mobileCanvas.drawImage(cached, 0, 0, cached.width, cached.height, 0, 0, cached.width, cached.height)
+          else
+            staticCanvas = cachedShadowCanvas
+            staticCanvas
+              .globalAlpha(1)
+              .compositeOperation("source-over")
+
+            drawLightSource(staticCanvas)
+            mobileCanvas = Light.shadowCanvas()
+            cached = cachedShadowCanvas.element()
+            mobileCanvas.drawImage(cached, 0, 0, cached.width, cached.height, 0, 0, cached.width, cached.height)
+        else
+          mobileCanvas = staticCanvas = Light.shadowCanvas()
+          mobileCanvas
+            .globalAlpha(1)
+            .compositeOperation("source-over")
+
+          drawLightSource(mobileCanvas)
+
+        setCanvasToRemove(mobileCanvas)
+        setCanvasToRemove(staticCanvas) if staticCanvas
+
         engine.eachObject (object) ->
-          if(object.I.opaque)
-            corners(object).each (corner) ->
-              ;#lineTo(canvas, corner)
-              
-            farCorners = farthestCorners(object, canvas)
-            #lineTo(canvas, farCorners[0], "green")
-            #lineTo(canvas, farCorners[1], "red")
-            
-            veryFar = [
-              farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0])
-              farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
-            ]
-            
-            shadowCanvas.fillShape veryFar[0], farCorners[0], farCorners[1], veryFar[1]
+          if object.I.opaque
+            if cacheBuilt
+              if object.I.mobile
+                drawObjectShadows(object, mobileCanvas)
+            else
+              if object.I.mobile
+                drawObjectShadows(object, mobileCanvas)
+              else
+                drawObjectShadows(object, staticCanvas) if I.cacheStatic
+                
 
+        cacheBuilt = true if I.cacheStatic
 
-        shadows = shadowCanvas.element()
+        shadows = mobileCanvas.element()
         canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
       else
-        canvas.fillCircle(I.x, I.y, I.radius, radgrad)
+        drawLightSource(canvas)
 
 ( ->
   canvas = $("<canvas width=640 height=480 />").powerCanvas()
   Light.shadowCanvas = ->
+    canvas.clear()
     canvas
 )()
 
