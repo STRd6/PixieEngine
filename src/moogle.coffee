@@ -4,6 +4,7 @@ Moogle = (I) ->
   GRAVITY = Point(0, 2)
   SCREEN_WIDTH = 640
   MAX_SHIELD = 64
+  INVULNERABILITY_DURATION = 32
   PLAYER_COLORS = [
     "#00F"
     "#F00"
@@ -22,6 +23,7 @@ Moogle = (I) ->
     disabled: 0
     excludedModules: ["Movable"]
     height: 24
+    invulnerable: INVULNERABILITY_DURATION
     mobile: true
     opaque: true
     score: 0
@@ -161,7 +163,7 @@ Moogle = (I) ->
     beams.push [sourcePoint, endPoint]
 
     if hitObject?.I
-      if hitObject.I.shielding
+      if hitObject.I.shielding || hitObject.I.invulnerable
         fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject)
         hitObject.I.shieldStrength -= 5
       else if hitObject.I.destructable
@@ -191,12 +193,14 @@ Moogle = (I) ->
     illuminate: (canvas) ->
       center = self.centeredBounds()
 
-      if I.disabled
+      if I.invulnerable
+        center.radius = Math.sin(I.age * Math.TAU / 36) * 16 + 24
+      else if I.disabled
         center.radius = rand(16) + 16
       else
         center.radius = 32
 
-      if I.shielding || I.disabled
+      if I.shielding || I.disabled || I.invulnerable
         canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()))
 
       beams.each (beam) ->
@@ -222,7 +226,8 @@ Moogle = (I) ->
         beams = []
         I.cooldown -= 1 if I.cooldown > 0
         I.disabled -= 1 if I.disabled > 0
-        
+        I.invulnerable -= 1 if I.invulnerable > 0
+
         if I.disabled
           I.velocity = I.velocity.add(Point.fromAngle(Random.angle()).scale(rand(4)))
 
@@ -338,6 +343,7 @@ Moogle = (I) ->
       x: [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608].rand()
       y: [0, -2 * I.height, -4 * I.height, -6 * I.height, -8 * I.height, -10 * I.height].rand()
       disabled: 0
+      invulnerable: INVULNERABILITY_DURATION
       shieldStrength: MAX_SHIELD
     )
 
