@@ -170,6 +170,8 @@
         self.stop()
         self.start()
     
+    self.attrAccessor "ambientLight"
+    self.attrAccessor "backgroundColor"
     self.attrAccessor "cameraTransform"
     self.include Bindable
     
