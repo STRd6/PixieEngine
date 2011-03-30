@@ -335,8 +335,8 @@ Moogle = (I) ->
 
     # Respawn
     engine.add $.extend({}, I,
-      x: [64, 256, 320, 512].rand()
-      y: -I.height
+      x: [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608].rand()
+      y: [0, -2 * I.height, -4 * I.height, -6 * I.height, -8 * I.height, -10 * I.height].rand()
       disabled: 0
       shieldStrength: MAX_SHIELD
     )
