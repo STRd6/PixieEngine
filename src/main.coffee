@@ -1,5 +1,5 @@
 window.engine = Engine 
-  ambientLight: 0.025
+  ambientLight: 0.05
   canvas: $("canvas").powerCanvas()
 
 block = 
@@ -22,8 +22,8 @@ engine.add
 
 if (level = Local.get("level"))
   engine.loadState level
-else if level1
-  engine.loadState level1
+else if level4
+  engine.loadState level4
 
 engine.start()
 
