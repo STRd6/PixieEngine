@@ -104,6 +104,8 @@ Moogle = (I) ->
     hudMargin = 10
   
     canvas.withTransform Matrix.translation(I.controller * (hudWidth + hudMargin) + screenPadding, 0), (canvas) ->
+      canvas.clearRect(0, 0, hudWidth, hudHeight)
+
       color = Color(I.color)
       color.a 0.5
       
