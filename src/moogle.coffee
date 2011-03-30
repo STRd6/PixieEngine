@@ -22,6 +22,7 @@ Moogle = (I) ->
     disabled: 0
     excludedModules: ["Movable"]
     height: 24
+    mobile: true
     opaque: true
     score: 0
     shielding: false
