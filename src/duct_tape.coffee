@@ -300,7 +300,12 @@ if(false) {
         context.clearRect(0, 0, canvas.width, canvas.height)
 
         return this
-      
+
+      clearRect: (x, y, width, height) ->
+        context.clearRect(x, y, width, height)
+
+        return this
+
       context: ->
         context
       
