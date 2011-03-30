@@ -7,7 +7,8 @@ block =
   width: 32
   height: 32
   solid: true
-    
+  opaque: true
+
 20.times (i) ->
   engine.add $.extend(
     x: 32 * i
