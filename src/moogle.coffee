@@ -3,7 +3,7 @@ Moogle = (I) ->
   
   GRAVITY = Point(0, 2)
   SCREEN_WIDTH = 640
-  MAX_SHIELD = 32
+  MAX_SHIELD = 64
   PLAYER_COLORS = [
     "#00F"
     "#F00"
