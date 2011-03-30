@@ -10,17 +10,6 @@ Light = (I) ->
   lineTo = (canvas, dest, color) ->
     canvas.strokeColor color || "black"
     canvas.drawLine(I.x, I.y, dest.x, dest.y, 1)
-    
-  fillShape = (context, points...) ->
-    context.fillStyle = "rgba(0, 0, 0, 1)"
-    context.beginPath()
-    points.each (point, i) ->
-      if i == 0
-        context.moveTo(point.x, point.y)
-      else
-        context.lineTo(point.x, point.y)
-    context.lineTo points[0].x, points[0].y
-    context.fill()
 
   corners = (object) ->
     ((I) ->
@@ -84,6 +73,7 @@ Light = (I) ->
       if I.shadows
         shadowContext.globalAlpha = 1
         shadowContext.globalCompositeOperation = "destination-out"
+        shadowCanvas.fillColor('#000')
   
         engine.eachObject (object) ->
           if(object.I.opaque)
@@ -99,9 +89,9 @@ Light = (I) ->
               farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])
             ]
             
-            fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1])
-          
-          
+            shadowCanvas.fillShape veryFar[0], farCorners[0], farCorners[1], veryFar[1]
+
+
       shadows = shadowCanvas.element()
       canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
 
