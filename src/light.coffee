@@ -7,7 +7,10 @@ Light = (I) ->
     color: "orange"
     radius: 500
     shadows: true
+    flicker: false
 
+  flickerState = "on"
+ 
   if I.shadows
     I.cacheStatic = true
  
@@ -92,6 +95,15 @@ Light = (I) ->
       #canvas.fillCircle(I.x, I.y, 10, I.color)
       
     illuminate: (canvas) ->
+      if I.flicker
+        r = rand()
+        if r < 0.05
+          flickerState = "off"
+        else if r < 0.10
+          flickerState = "on"
+
+        return if flickerState == "off"
+
       if I.shadows
         if I.cacheStatic
           if cacheBuilt
