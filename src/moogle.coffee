@@ -64,7 +64,7 @@ Moogle = (I) ->
             I.shielding = true
             I.shieldStrength -= 1
           else
-            I.disabled = MAX_SHIELD * 3
+            I.disabled = 96
 
       unless I.shielding || I.disabled
         I.shieldStrength = I.shieldStrength.approach(MAX_SHIELD, 0.25)
