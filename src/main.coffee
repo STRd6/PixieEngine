@@ -22,8 +22,8 @@ engine.add
 
 if (level = Local.get("level"))
   engine.loadState level
-else if level4
-  engine.loadState level4
+else if level5
+  engine.loadState level5
 
 engine.start()
 
