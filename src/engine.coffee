@@ -42,7 +42,9 @@
         shadowContext.globalCompositeOperation = "destination-out"
         shadowCanvas.withTransform I.cameraTransform, (shadowCanvas) ->
           objects.each (object, i) ->
-            object.illuminate?(shadowCanvas)
+            if object.illuminate
+              shadowContext.globalAlpha = 1
+              object.illuminate(shadowCanvas)
 
       hudCanvas.clear()
       canvas.withTransform I.cameraTransform, (canvas) ->
