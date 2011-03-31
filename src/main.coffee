@@ -25,15 +25,43 @@ if (level = Local.get("level"))
 else if level5
   engine.loadState level5
 
+PLAY_TO = 50
+ 
 engine.start()
 
 engine.bind "update", ->
+  playerInfo = {}
+  
+  engine.eachObject (o) ->
+    if o.I.controller? 
+      playerInfo[o.I.controller] = o.I
+      
+  # Winner?
+  highestScore = 0
+  winningPlayers = []
+  
+  for id, info of playerInfo
+    id = parseInt(id, 10)
+
+    if info.score > highestScore
+      highestScore = info.score
+      winningPlayers = [id]
+    else if playerInfo.score == highestScore
+      winningPlayers.push[id]
+      
+  console.log highestScore
+      
+  if highestScore >= PLAY_TO
+    engine.pause()
+    if winningPlayers.length == 1
+      alert "Player #{winningPlayers[0] + 1} Wins!"
+    else if winningPlayers.length
+      alert "Tie Between Players #{winningPlayers.map((n)-> n + 1).join(', ')}"
+
   # Player Spawner
   CONTROLLERS.each (controller, i) ->
     if controller.actionDown "D"
-      exists = false
-      engine.eachObject (o) ->
-        exists ||= o.I.controller == i
+      exists = playerInfo[i]
 
       unless exists
         engine.add
