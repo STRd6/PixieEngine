@@ -20,10 +20,9 @@ engine.add
   x: 320
   y: 240
 
-if (level = Local.get("level"))
-  engine.loadState level
-else if level5
-  engine.loadState level5
+levels = [level1, level3, level4, level5, level6]
+
+engine.loadState levels.rand()
 
 PLAY_TO = 50
  
@@ -49,14 +48,14 @@ engine.bind "update", ->
     else if playerInfo.score == highestScore
       winningPlayers.push[id]
       
-  console.log highestScore
-      
   if highestScore >= PLAY_TO
-    engine.pause()
     if winningPlayers.length == 1
       alert "Player #{winningPlayers[0] + 1} Wins!"
-    else if winningPlayers.length
+    else
       alert "Tie Between Players #{winningPlayers.map((n)-> n + 1).join(', ')}"
+    
+    engine.loadState levels.rand()
+    return
 
   # Player Spawner
   CONTROLLERS.each (controller, i) ->
