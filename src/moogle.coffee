@@ -52,6 +52,7 @@ Moogle = (I) ->
   PHYSICS =
     platform: () ->
       I.shielding = false
+      shooting = false
 
       if jumping
         I.velocity.y += GRAVITY.scale(0.5).y
@@ -68,7 +69,7 @@ Moogle = (I) ->
           else
             I.disabled = 96
 
-      unless I.shielding
+      unless I.shielding || I.disabled
         I.shieldStrength = I.shieldStrength.approach(MAX_SHIELD, 0.25)
 
         # Move around based on input
