@@ -2,7 +2,7 @@
   "author": "STRd6",
   "name": "PixieEngine",
   "libs": {
-    "gamelib.js": "https://github.com/STRd6/gamelib/raw/v0.0.5/gamelib.js"
+    "gamelib.js": "https://github.com/STRd6/gamelib/raw/pixie/gamelib.js"
   },
   "directories": {
     "lib": "lib",
