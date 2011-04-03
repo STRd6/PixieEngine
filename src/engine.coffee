@@ -11,8 +11,10 @@
   hudCanvas.font("bold 9pt consolas, 'Courier New', 'andale mono', 'lucida console', monospace")
 
   window.Engine = (I) ->
+    I ||= {}
+
     $.reverseMerge I, defaults
-  
+
     intervalId = null
     savedState = null
     age = 0
