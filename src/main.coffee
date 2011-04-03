@@ -20,7 +20,7 @@ engine.add
   x: 320
   y: 240
 
-levels = [level1, level3, level4, level5, level6]
+levels = [level3, level4, level5, level6]
 
 engine.loadState levels.rand()
 
