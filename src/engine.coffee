@@ -112,7 +112,14 @@
         objects.each iterator
 
       find: (selector) ->
-        []
+        results = []
+
+        matcher = EngineSelector.generate(selector)
+
+        objects.each (object) ->
+          results.push object if matcher.match object
+
+        results
 
       collides: (bounds, sourceObject) ->
         objects.inject false, (collided, object) ->
