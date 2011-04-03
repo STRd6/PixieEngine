@@ -25,7 +25,7 @@ EngineSelector =
     match: (object) ->
       for component in components
         idMatch = (component[ID] == object.I.id) || !component[ID]
-        typeMatch = (component[TYPE] == object.I.type) || !component[TYPE]
+        typeMatch = (component[TYPE] == object.I.class) || !component[TYPE]
 
         if attr = component[ATTR]
           if (value = component[ATTR_VALUE])? 
