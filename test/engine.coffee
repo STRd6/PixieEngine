@@ -65,7 +65,14 @@ test "EngineSelector.process", ->
   equal type, "Foo"
   equal id, "test"
   equal attr, "cool"
-  equal value, "1"
+  equal value, 1
+
+  [type, id, attr, value] = EngineSelector.process(".baz=false")
+
+  equal type, undefined
+  equal id, undefined
+  equal attr, "baz"
+  equal value, false
 
 asyncTest "Running Engine", ->
   engine = Engine()

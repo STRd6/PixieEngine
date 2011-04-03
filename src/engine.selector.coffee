@@ -7,6 +7,8 @@ EngineSelector =
     result = /^(\w+)?#?([\w\-]+)?\.?([\w\-]+)?=?([\w\-]+)?/.exec(item)
 
     if result
+      result[4] = result[4].parse() if result[4]
+
       result.splice(1)
     else
       []
@@ -21,14 +23,18 @@ EngineSelector =
     ATTR_VALUE = 3
 
     match: (object) ->
+      debugger
       for component in components
         idMatch = (component[ID] == object.I.id) || !component[ID]
         typeMatch = (component[TYPE] == object.I.type) || !component[TYPE]
 
         if attr = component[ATTR]
-          attrMatch = object.I[attr]
+          if value = component[ATTR_VALUE]
+            attrMatch = (object.I[attr] == value)
+          else
+            attrMatch = object.I[attr]
         else
-          atttrMatch = true
+          attrMatch = true
 
         return true if idMatch && typeMatch && attrMatch
 
