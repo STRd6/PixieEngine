@@ -125,7 +125,7 @@ Moogle = (I) ->
       duration: 10
       sprite: Sprite.EMPTY
       velocity: Point(0, 0)
-      particleCount: 2
+      particleCount: 9
       batchSize: 5
       x: target.x
       y: target.y
