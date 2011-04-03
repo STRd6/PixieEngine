@@ -22,8 +22,8 @@ CONTROLLERS = []
   left: "left"
   A: "end"
   B: "home"
-  C: "pageup"
-  D: "pagedown"
+  C: "pagedown"
+  D: "pageup"
 }, {
   up: "o"
   right: "q"
@@ -31,8 +31,8 @@ CONTROLLERS = []
   left: "a"
   A: "2"
   B: "1"
-  C: "'"
-  D: ","
+  C: ","
+  D: "'"
 }, {
   up: "u"
   right: "k"
@@ -40,8 +40,8 @@ CONTROLLERS = []
   left: "e"
   A: "4"
   B: "3"
-  C: "."
-  D: "p"
+  C: "p"
+  D: "."
 }, {
   up: "d"
   right: "b"
@@ -49,8 +49,8 @@ CONTROLLERS = []
   left: "i"
   A: "6"
   B: "5"
-  C: "y"
-  D: "f"
+  C: "f"
+  D: "y"
 }, {
   up: "t"
   right: "w"
@@ -58,8 +58,8 @@ CONTROLLERS = []
   left: "h"
   A: "8"
   B: "7"
-  C: "g"
-  D: "c"
+  C: "c"
+  D: "g"
 }, {
   up: "s"
   right: "z"
@@ -67,8 +67,8 @@ CONTROLLERS = []
   left: "n"
   A: "0"
   B: "9"
-  C: "r"
-  D: "l"
+  C: "l"
+  D: "r"
 }, {
   up: "="
   right: "return"
@@ -76,8 +76,8 @@ CONTROLLERS = []
   left: "/"
   A: "]"
   B: "["
-  C: "backspace"
-  D: "\\"
+  C: "\\"
+  D: "backspace"
 }].each (actions, i) ->
   CONTROLLERS[i] = Controller(actions)
 
