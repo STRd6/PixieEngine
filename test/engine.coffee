@@ -33,7 +33,15 @@ test "#find", ->
   engine.add
     id: "testy"
     
+  engine.add
+    test: true
+    
+  engine.add
+    solid: true
+    
   equal engine.find("#no_testy").length, 0
+  equal engine.find("#testy").length, 1
+  equal engine.find(".solid").length, 1
 
 test "EngineSelector.parse", ->
   a = EngineSelector.parse("#foo")
@@ -52,11 +60,12 @@ test "EngineSelector.parse", ->
   equal a.last(), "baz"
 
 test "EngineSelector.process", ->
-  [type, id, attr] = EngineSelector.process("Foo#test.cool")
+  [type, id, attr, value] = EngineSelector.process("Foo#test.cool=1")
 
   equal type, "Foo"
   equal id, "test"
   equal attr, "cool"
+  equal value, "1"
 
 asyncTest "Running Engine", ->
   engine = Engine()
