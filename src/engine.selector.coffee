@@ -4,10 +4,33 @@ EngineSelector =
       result.trim()
 
   process: (item) ->
-    result = /^(\w+)?#?([\w\-]+)?\.?([\w\-]+)?/.exec(item)
+    result = /^(\w+)?#?([\w\-]+)?\.?([\w\-]+)?=?([\w\-]+)?/.exec(item)
 
     if result
       result.splice(1)
     else
       []
+
+  generate: (selector) ->
+    components = EngineSelector.parse(selector).map (piece) ->
+      EngineSelector.process(piece)
+
+    TYPE = 0
+    ID = 1
+    ATTR = 2
+    ATTR_VALUE = 3
+
+    match: (object) ->
+      for component in components
+        idMatch = (component[ID] == object.I.id) || !component[ID]
+        typeMatch = (component[TYPE] == object.I.type) || !component[TYPE]
+
+        if attr = component[ATTR]
+          attrMatch = object.I[attr]
+        else
+          atttrMatch = true
+
+        return true if idMatch && typeMatch && attrMatch
+
+      return false
 
