@@ -110,7 +110,10 @@
         
       eachObject: (iterator) ->
         objects.each iterator
-        
+
+      find: (selector) ->
+        []
+
       collides: (bounds, sourceObject) ->
         objects.inject false, (collided, object) ->
           collided || (object.solid() && (object != sourceObject) && object.collides(bounds))
