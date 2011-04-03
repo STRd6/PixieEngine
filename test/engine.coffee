@@ -38,10 +38,13 @@ test "#find", ->
     
   engine.add
     solid: true
+    opaque: false
     
   equal engine.find("#no_testy").length, 0
   equal engine.find("#testy").length, 1
-  equal engine.find(".solid").length, 1
+  equal engine.find(".test").length, 1
+  equal engine.find(".solid=true").length, 1
+  equal engine.find(".opaque=false").length, 1
 
 test "EngineSelector.parse", ->
   a = EngineSelector.parse("#foo")
