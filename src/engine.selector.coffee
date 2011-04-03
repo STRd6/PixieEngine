@@ -23,13 +23,12 @@ EngineSelector =
     ATTR_VALUE = 3
 
     match: (object) ->
-      debugger
       for component in components
         idMatch = (component[ID] == object.I.id) || !component[ID]
         typeMatch = (component[TYPE] == object.I.type) || !component[TYPE]
 
         if attr = component[ATTR]
-          if value = component[ATTR_VALUE]
+          if (value = component[ATTR_VALUE])? 
             attrMatch = (object.I[attr] == value)
           else
             attrMatch = object.I[attr]
