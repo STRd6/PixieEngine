@@ -2,240 +2,16 @@ var App;
 App = {};var App;
 App = {};var App;
 App = {};;
-var Callback, Event, Guard, GuardsCollection, Machine, StateMachine, Transition;
-StateMachine = function(name, object, options, block) {
-  return Machine(name, object, options, block);
-};
-Callback = function(options, machine, block) {
-  var self;
-  self = {
-    match: function(from_state, to_state, event) {
-      if (options.to && options.from) {
-        if (options.to === to_state && options.from === from_state) {
-          return true;
-        }
-        return false;
-      }
-      if ((options.to === to_state) || (options.from === from_state) || (options.on === event.name)) {
-        return true;
-      }
-    },
-    run: function(params) {
-      (typeof block === "undefined" || block === null) ? undefined : block.apply(machine.object, params);
-      return options.run ? options.run.apply(machine.object, params) : null;
-    }
-  };
-  return self;
-};
-Event = function(name, machine) {
-  var guards, self, transition_for;
-  guards = GuardsCollection();
-  transition_for = function(params) {
-    var from, to;
-    if (can_fire(params)) {
-      from = machine.state();
-      to = guards.find_to_state(name, from, params);
-      return Transition(machine, self, from, to, params);
-    } else {
-      return false;
-    }
-  };
-  self = {
-    transition: function(options) {
-      guards.add(name, machine.object, options);
-      machine.states.push(options.from);
-      machine.states.push(options.to);
-      return self;
-    },
-    can_fire: function(params) {
-      if (guards.match(name, machine.state(), params)) {
-        return true;
-      }
-      return false;
-    },
-    fire: function(params) {
-      var transition;
-      transition = transition_for(params);
-      if (transition) {
-        return transition.perform();
-      }
-      return false;
-    }
-  };
-  return self;
-};
-Guard = function(name, object, options) {
-  var I, self;
-  I = {
-    from: options.from,
-    to: options.to,
-    except: options.except,
-    options: options,
-    name: name,
-    object: object
-  };
-  self = {
-    match: function(name, from, params) {
-      if (name === I.name && match_from_state(I.from)) {
-        if (run_callbacks(params)) {
-          return true;
-        }
-      }
-      return false;
-    },
-    match_from_state: function(from) {
-      if (typeof I.from === 'string') {
-        if (I.from === 'any') {
-          return check_exceptions(from);
-        } else {
-          return from === I.from;
-        }
-      } else {
-        return I.from.each(function(from_item) {
-          if (from === from_item) {
-            return true;
-          }
-          return false;
-        });
-      }
-    },
-    check_exceptions: function(from) {
-      return from !== I.except;
-    },
-    run_callbacks: function(params) {
-      var success;
-      success = true;
-      if (I.options.when) {
-        success = I.options.when.apply(I.object, params);
-      }
-      if (I.options.unless && success) {
-        success = !I.options.unless.apply(I.object, params);
-      }
-      return success;
-    }
-  };
-  return self;
-};
-GuardsCollection = function() {
-  var guards, last_match, self;
-  guards = [];
-  last_match = null;
-  self = {
-    add: function(name, object, options) {
-      var guard;
-      guard = Guard(name, object, options);
-      guards.push(guard);
-      return guard;
-    },
-    all: function() {
-      return guards;
-    },
-    match: function(name, from, params) {
-      guards.each(function(guard) {
-        var match;
-        match = guard.match(name, from, params);
-        if (match) {
-          last_match = match;
-          return guard;
-        }
-      });
-      return false;
-    },
-    find_to_state: function(name, from, params) {
-      var local_match;
-      local_match = match(name, from, params);
-      if (local_match) {
-        return match.to;
-      }
-    }
-  };
-  return self;
-};
-Machine = function(name, object, options, block) {
-  var add_event_methods, add_methods_to_object, callbacks, events, internal_state, machine_name, self, set_state, states;
-  events = [];
-  states = [];
-  callbacks = {
-    before: [],
-    after: []
-  };
-  machine_name = name;
-  internal_state = options && (options.initial ? options.initial : '');
-  add_methods_to_object(name, object);
-  if (block) {
-    block(self);
-  }
-  return self;
-  add_methods_to_object = function(name, object) {
-    object[name] = self.state();
-    object[name + '_events'] = events;
-    return (object[name + '_states'] = states);
-  };
-  add_event_methods = function(name, object, event) {
-    object[name] = function() {
-      return event.fire(arguments);
-    };
-    return (object['can_' + name] = function() {
-      return event.can_fire();
-    });
-  };
-  set_state = function(state) {
-    internal_state = state;
-    return (object[machine_name] = state);
-  };
-  return (self = {
-    event: function(name, block) {
-      var event;
-      event = Event(name, self);
-      events.push(event);
-      add_event_methods(name, object, event);
-      if (block) {
-        block(event);
-      }
-      return event;
-    },
-    before_transition: function(options, block) {
-      var callback;
-      callback = Callback(options, self, block);
-      callbacks["before"].push(callback);
-      return callback;
-    },
-    after_transition: function(options, block) {
-      var callback;
-      callback = Callback(options, self, block);
-      callbacks["after"].push(callback);
-      return callback;
-    },
-    state: function() {
-      return internal_state;
-    }
-  });
-};
-Transition = function(machine, event, from, to, params) {
-  var self;
-  return (self = {
-    perform: function() {
-      self.before();
-      machine.set_state(to);
-      self.after();
-      return true;
-    },
-    before: function() {
-      return machine.callbacks['before'].each(function(callback) {
-        return callback.match(from, to, event) ? callback.run(params) : null;
-      });
-    },
-    after: function() {
-      return machine.callbacks['after'].each(function(callback) {
-        return callback.match(from, to, event) ? callback.run(params) : null;
-      });
-    },
-    rollback: function() {
-      return machine.set_state(from);
-    }
-  });
-};;
-/**
+;
+/***
+* Joins all elements of an array into a string.
+* @name join
+* @param [separator] Specifies a string to separate each element of the array.
+* The separator is converted to a string if necessary. If omitted, the array
+* elements are separated with a comma.
+* @methodOf Array#
+*/
+/***
 * Creates and returns a copy of the array. The copy contains
 * the same objects.
 *
@@ -243,10 +19,9 @@ Transition = function(machine, event, from, to, params) {
 * @returns A new array that is a copy of the array
 */
 Array.prototype.copy = function() {
-  return this.concat();  
+  return this.concat();
 };
-
-/**
+/***
 * Empties the array of its contents. It is modified in place.
 *
 * @type Array
@@ -256,8 +31,7 @@ Array.prototype.clear = function() {
   this.length = 0;
   return this;
 };
-
-/**
+/***
 * Invoke the named method on each element in the array
 * and return a new array containing the results of the invocation.
 *
@@ -273,18 +47,17 @@ Array.prototype.clear = function() {
 * @param [arg...] Optional arguments to pass to the method being invoked.
 *
 * @type Array
-* @returns A new array containing the results of invoking the 
+* @returns A new array containing the results of invoking the
 * named method on each element.
 */
 Array.prototype.invoke = function(method) {
-  var args = Array.prototype.slice.call(arguments, 1);
-  
+  var args;
+  args = Array.prototype.slice.call(arguments, 1);
   return this.map(function(element) {
     return element[method].apply(element, args);
   });
 };
-
-/**
+/***
 * Randomly select an element from the array.
 *
 * @returns A random element from an array
@@ -292,8 +65,7 @@ Array.prototype.invoke = function(method) {
 Array.prototype.rand = function() {
   return this[rand(this.length)];
 };
-
-/**
+/***
 * Remove the first occurance of the given object from the array if it is
 * present.
 *
@@ -301,15 +73,11 @@ Array.prototype.rand = function() {
 * @returns The removed object if present otherwise undefined.
 */
 Array.prototype.remove = function(object) {
-  var index = this.indexOf(object);
-  if(index >= 0) {
-    return this.splice(index, 1)[0];
-  } else {
-    return undefined;
-  }
+  var index;
+  index = this.indexOf(object);
+  return index >= 0 ? this.splice(index, 1)[0] : undefined;
 };
-
-/**
+/***
 * Returns true if the element is present in the array.
 *
 * @param {Object} element The element to check if present.
@@ -317,110 +85,149 @@ Array.prototype.remove = function(object) {
 * @type Boolean
 */
 Array.prototype.include = function(element) {
-  return this.indexOf(element) != -1;
+  return this.indexOf(element) !== -1;
 };
-
-/**
+/***
  * Call the given iterator once for each element in the array,
- * passing in the element as the first argument, the index of 
+ * passing in the element as the first argument, the index of
  * the element as the second argument, and this array as the
  * third argument.
  *
- * @param {Function} iterator Function to be called once for 
+ * @param {Function} iterator Function to be called once for
  * each element in the array.
- * @param {Object} [context] Optional context parameter to be 
+ * @param {Object} [context] Optional context parameter to be
  * used as `this` when calling the iterator function.
  *
  * @returns `this` to enable method chaining.
- */
+*/
 Array.prototype.each = function(iterator, context) {
-  if(this.forEach) {
+  var _len, _ref, element, i;
+  if (this.forEach) {
     this.forEach(iterator, context);
   } else {
-    var len = this.length;
-    for(var i = 0; i < len; i++) {
-      iterator.call(context, this[i], i, this);
+    _ref = this;
+    for (i = 0, _len = _ref.length; i < _len; i++) {
+      element = _ref[i];
+      iterator.call(context, element, i, this);
     }
   }
-
   return this;
 };
-
 Array.prototype.eachSlice = function(n, iterator, context) {
-  var len = Math.floor(this.length / n);
-  
-  for(var i = 0; i < len; i++) {
-    iterator.call(context, this.slice(i*n, (i+1)*n), i*n, this);
+  var i, len;
+  if (n > 0) {
+    len = (this.length / n).floor();
+    i = -1;
+    while (++i < len) {
+      iterator.call(context, this.slice(i * n, (i + 1) * n), i * n, this);
+    }
   }
-  
   return this;
 };
-
-/**
+/***
  * Returns a new array with the elements all shuffled up.
  *
  * @returns A new array that is randomly shuffled.
  * @type Array
- */
+*/
 Array.prototype.shuffle = function() {
-  var shuffledArray = [];
-  
+  var shuffledArray;
+  shuffledArray = [];
   this.each(function(element) {
-    shuffledArray.splice(rand(shuffledArray.length + 1), 0, element);
+    return shuffledArray.splice(rand(shuffledArray.length + 1), 0, element);
   });
-  
   return shuffledArray;
 };
-
-/**
+/***
  * Returns the first element of the array, undefined if the array is empty.
  *
  * @returns The first element, or undefined if the array is empty.
  * @type Object
- */
+*/
 Array.prototype.first = function() {
   return this[0];
 };
-
-/**
+/***
  * Returns the last element of the array, undefined if the array is empty.
  *
  * @returns The last element, or undefined if the array is empty.
  * @type Object
- */
+*/
 Array.prototype.last = function() {
   return this[this.length - 1];
 };
-
-/**
- * Pretend the array is a circle and grab a new array containing length elements. 
- * If length is not given return the element at start, again assuming the array 
+/***
+ * Returns an object containing the extremes of this array.
+ * <pre>
+ * [-1, 3, 0].extremes() # => {min: -1, max: 3}
+ * </pre>
+ * @param {Function} [fn] An optional funtion used to evaluate
+ * each element to calculate its value for determining extremes.
+ * @returns {min: minElement, max: maxElement}
+ * @type Object
+*/
+Array.prototype.extremes = function(fn) {
+  var max, maxResult, min, minResult;
+  fn || (fn = function(n) {
+    return n;
+  });
+  min = (max = undefined);
+  minResult = (maxResult = undefined);
+  this.each(function(object) {
+    var result;
+    result = fn(object);
+    if (typeof min !== "undefined" && min !== null) {
+      if (result < minResult) {
+        min = object;
+        minResult = result;
+      }
+    } else {
+      min = object;
+      minResult = result;
+    }
+    if (typeof max !== "undefined" && max !== null) {
+      if (result > maxResult) {
+        max = object;
+        return (maxResult = result);
+      }
+    } else {
+      max = object;
+      return (maxResult = result);
+    }
+  });
+  return {
+    min: min,
+    max: max
+  };
+};
+/***
+ * Pretend the array is a circle and grab a new array containing length elements.
+ * If length is not given return the element at start, again assuming the array
  * is a circle.
  *
- * @param {Number} start The index to start wrapping at, or the index of the 
+ * @param {Number} start The index to start wrapping at, or the index of the
  * sole element to return if no length is given.
- * @param {Number} [length] Optional length determines how long result 
+ * @param {Number} [length] Optional length determines how long result
  * array should be.
- * @returns The element at start mod array.length, or an array of length elements, 
+ * @returns The element at start mod array.length, or an array of length elements,
  * starting from start and wrapping.
  * @type Object or Array
- */
+*/
 Array.prototype.wrap = function(start, length) {
-  if(length != null) {
-    var end = start + length;
-    var result = [];
-  
-    for(var i = start; i < end; i++) {
+  var end, i, result;
+  if (typeof length !== "undefined" && length !== null) {
+    end = start + length;
+    i = start;
+    result = [];
+    while (i++ < end) {
       result.push(this[i.mod(this.length)]);
     }
-  
     return result;
   } else {
     return this[start.mod(this.length)];
   }
 };
-
-/**
+/***
  * Partitions the elements into two groups: those for which the iterator returns
  * true, and those for which it returns false.
  * @param {Function} iterator
@@ -429,81 +236,68 @@ Array.prototype.wrap = function(start, length) {
  *
  * @type Array
  * @returns An array in the form of [trueCollection, falseCollection]
- */
+*/
 Array.prototype.partition = function(iterator, context) {
-  var trueCollection = [];
-  var falseCollection = [];
-
+  var falseCollection, trueCollection;
+  trueCollection = [];
+  falseCollection = [];
   this.each(function(element) {
-    if(iterator.call(context, element)) {
-      trueCollection.push(element);
-    } else {
-      falseCollection.push(element);
-    }
+    return iterator.call(context, element) ? trueCollection.push(element) : falseCollection.push(element);
   });
-
   return [trueCollection, falseCollection];
 };
-
-/**
- * Return the group of elements for which the iterator's return value is true.
- * 
- * @param {Function} iterator The iterator receives each element in turn as 
+/***
+ * Return the group of elements for which the return value of the iterator is true.
+ *
+ * @param {Function} iterator The iterator receives each element in turn as
  * the first agument.
  * @param {Object} [context] Optional context parameter to be
  * used as `this` when calling the iterator function.
  *
  * @type Array
  * @returns An array containing the elements for which the iterator returned true.
- */
+*/
 Array.prototype.select = function(iterator, context) {
   return this.partition(iterator, context)[0];
 };
-
-/**
+/***
  * Return the group of elements that are not in the passed in set.
- * 
+ *
  * @param {Array} values List of elements to exclude.
  *
  * @type Array
  * @returns An array containing the elements that are not passed in.
- */
+*/
 Array.prototype.without = function(values) {
   return this.reject(function(element) {
     return values.include(element);
   });
 };
-
-/**
- * Return the group of elements for which the iterator's return value is false.
- * 
- * @param {Function} iterator The iterator receives each element in turn as 
+/***
+ * Return the group of elements for which the return value of the iterator is false.
+ *
+ * @param {Function} iterator The iterator receives each element in turn as
  * the first agument.
  * @param {Object} [context] Optional context parameter to be
  * used as `this` when calling the iterator function.
  *
  * @type Array
  * @returns An array containing the elements for which the iterator returned false.
- */
+*/
 Array.prototype.reject = function(iterator, context) {
   return this.partition(iterator, context)[1];
 };
-
 Array.prototype.inject = function(initial, iterator) {
   this.each(function(element) {
-    initial = iterator(initial, element);
+    return (initial = iterator(initial, element));
   });
-  
   return initial;
 };
-
 Array.prototype.sum = function() {
   return this.inject(0, function(sum, n) {
     return sum + n;
   });
-};
-
-;
+};;
 /**
  * CoffeeScript Compiler v1.0.1
  * http://coffeescript.org
@@ -788,7 +582,7 @@ Function.prototype.withAfter = function(interception) {
     return result;
   };
 };;
-/*
+/***
  * jQuery Hotkeys Plugin
  * Copyright 2010, John Resig
  * Dual licensed under the MIT or GPL Version 2 licenses.
@@ -799,118 +593,174 @@ Function.prototype.withAfter = function(interception) {
  * Original idea by:
  * Binny V A, http://www.openjs.com/scripts/events/keyboard_shortcuts/
 */
-
-(function(jQuery){
-  
+(function(jQuery) {
+  var keyHandler;
   jQuery.hotkeys = {
     version: "0.8",
-
     specialKeys: {
-      8: "backspace", 9: "tab", 13: "return", 16: "shift", 17: "ctrl", 18: "alt", 19: "pause",
-      20: "capslock", 27: "esc", 32: "space", 33: "pageup", 34: "pagedown", 35: "end", 36: "home",
-      37: "left", 38: "up", 39: "right", 40: "down", 45: "insert", 46: "del", 
-      96: "0", 97: "1", 98: "2", 99: "3", 100: "4", 101: "5", 102: "6", 103: "7",
-      104: "8", 105: "9", 106: "*", 107: "+", 109: "-", 110: ".", 111 : "/", 
-      112: "f1", 113: "f2", 114: "f3", 115: "f4", 116: "f5", 117: "f6", 118: "f7", 119: "f8", 
-      120: "f9", 121: "f10", 122: "f11", 123: "f12", 144: "numlock", 145: "scroll", 191: "/", 224: "meta"
+      8: "backspace",
+      9: "tab",
+      13: "return",
+      16: "shift",
+      17: "ctrl",
+      18: "alt",
+      19: "pause",
+      20: "capslock",
+      27: "esc",
+      32: "space",
+      33: "pageup",
+      34: "pagedown",
+      35: "end",
+      36: "home",
+      37: "left",
+      38: "up",
+      39: "right",
+      40: "down",
+      45: "insert",
+      46: "del",
+      96: "0",
+      97: "1",
+      98: "2",
+      99: "3",
+      100: "4",
+      101: "5",
+      102: "6",
+      103: "7",
+      104: "8",
+      105: "9",
+      106: "*",
+      107: "+",
+      109: "-",
+      110: ".",
+      111: "/",
+      112: "f1",
+      113: "f2",
+      114: "f3",
+      115: "f4",
+      116: "f5",
+      117: "f6",
+      118: "f7",
+      119: "f8",
+      120: "f9",
+      121: "f10",
+      122: "f11",
+      123: "f12",
+      144: "numlock",
+      145: "scroll",
+      186: ";",
+      187: "=",
+      188: ",",
+      189: "-",
+      190: ".",
+      191: "/",
+      219: "[",
+      220: "\\",
+      221: "]",
+      222: "'",
+      224: "meta"
     },
-  
     shiftNums: {
-      "`": "~", "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", 
-      "8": "*", "9": "(", "0": ")", "-": "_", "=": "+", ";": ": ", "'": "\"", ",": "<", 
-      ".": ">",  "/": "?",  "\\": "|"
+      "`": "~",
+      "1": "!",
+      "2": "@",
+      "3": "#",
+      "4": "$",
+      "5": "%",
+      "6": "^",
+      "7": "&",
+      "8": "*",
+      "9": "(",
+      "0": ")",
+      "-": "_",
+      "=": "+",
+      ";": ":",
+      "'": "\"",
+      ",": "<",
+      ".": ">",
+      "/": "?",
+      "\\": "|"
     }
   };
-
-  function keyHandler( handleObj ) {
-    // Only care when a possible input has been specified
-    if ( typeof handleObj.data !== "string" ) {
-      return;
+  keyHandler = function(handleObj) {
+    var keys, origHandler;
+    if (typeof handleObj.data !== "string") {
+      return null;
     }
-    
-    var origHandler = handleObj.handler,
-      keys = handleObj.data.toLowerCase().split(" ");
-  
-    handleObj.handler = function( event ) {
-      // Don't fire in text-accepting inputs that we didn't directly bind to
-      if ( this !== event.target && (/textarea|select/i.test( event.target.nodeName ) ||
-         event.target.type === "text" || event.target.type === "password") ) {
-        return;
+    origHandler = handleObj.handler;
+    keys = handleObj.data.toLowerCase().split(" ");
+    return (handleObj.handler = function(event) {
+      var _i, _len, _ref, _result, character, key, modif, possible, special;
+      if (this !== event.target && (/textarea|select/i.test(event.target.nodeName) || event.target.type === "text" || event.target.type === "password")) {
+        return null;
       }
-      
-      // Keypress represents characters, not special keys
-      var special = event.type !== "keypress" && jQuery.hotkeys.specialKeys[ event.which ],
-        character = String.fromCharCode( event.which ).toLowerCase(),
-        key, modif = "", possible = {};
-
-      // check combinations (alt|ctrl|shift+anything)
-      if ( event.altKey && special !== "alt" ) {
+      special = event.type !== "keypress" && jQuery.hotkeys.specialKeys[event.which];
+      character = String.fromCharCode(event.which).toLowerCase();
+      modif = "";
+      possible = {};
+      if (event.altKey && special !== "alt") {
         modif += "alt+";
       }
-
-      if ( event.ctrlKey && special !== "ctrl" ) {
+      if (event.ctrlKey && special !== "ctrl") {
         modif += "ctrl+";
       }
-      
-      // TODO: Need to make sure this works consistently across platforms
-      if ( event.metaKey && !event.ctrlKey && special !== "meta" ) {
+      if (event.metaKey && !event.ctrlKey && special !== "meta") {
         modif += "meta+";
       }
-
-      if ( event.shiftKey && special !== "shift" ) {
+      if (event.shiftKey && special !== "shift") {
         modif += "shift+";
       }
-
-      if ( special ) {
-        possible[ modif + special ] = true;
-
+      if (special) {
+        possible[modif + special] = true;
       } else {
-        possible[ modif + character ] = true;
-        possible[ modif + jQuery.hotkeys.shiftNums[ character ] ] = true;
-
-        // "$" can be triggered as "Shift+4" or "Shift+$" or just "$"
-        if ( modif === "shift+" ) {
-          possible[ jQuery.hotkeys.shiftNums[ character ] ] = true;
+        possible[modif + character] = true;
+        possible[modif + jQuery.hotkeys.shiftNums[character]] = true;
+        if (modif === "shift+") {
+          possible[jQuery.hotkeys.shiftNums[character]] = true;
         }
       }
-
-      for ( var i = 0, l = keys.length; i < l; i++ ) {
-        if ( possible[ keys[i] ] ) {
-          return origHandler.apply( this, arguments );
+      _result = []; _ref = keys;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        key = _ref[_i];
+        if (possible[key]) {
+          return origHandler.apply(this, arguments);
         }
       }
-    };
-  }
-
-  jQuery.each([ "keydown", "keyup", "keypress" ], function() {
-    jQuery.event.special[ this ] = { add: keyHandler };
+      return _result;
+    });
+  };
+  return jQuery.each(["keydown", "keyup", "keypress"], function() {
+    return (jQuery.event.special[this] = {
+      add: keyHandler
+    });
   });
-
-})( jQuery );;
-/**
+})(jQuery);;
+var __hasProp = Object.prototype.hasOwnProperty;
+/***
  * Merges properties from objects into target without overiding.
  * First come, first served.
  * @return target
- */
+*/
 jQuery.extend({
   reverseMerge: function(target) {
-    var i = 1, length = arguments.length;
-
-    for( ; i < length; i++) {
-      var object = arguments[i];
-
-      for(var name in object) {
-        if(!target.hasOwnProperty(name)) {
+    var _i, _len, _ref, _ref2, i, name, object;
+    _ref = arguments;
+    for (i = 0, _len = _ref.length; i < _len; i++) {
+      object = _ref[i];
+      if (i === 0) {
+        continue;
+      }
+      _ref2 = object;
+      for (name in _ref2) {
+        if (!__hasProp.call(_ref2, name)) continue;
+        _i = _ref2[name];
+        if (!(target.hasOwnProperty(name))) {
           target[name] = object[name];
         }
       }
     }
-
     return target;
   }
-});
-
-;
+});;
 $(function() {
   var keyName;
   /***
@@ -942,9 +792,9 @@ $(function() {
     }) : (window[name] = $.noop);
   });
 });;
-/**
+/***
 * Matrix.js v1.3.0pre
-* 
+*
 * Copyright (c) 2010 STRd6
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -969,29 +819,30 @@ $(function() {
 * http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/flash/geom/Matrix.html
 */
 (function() {
-  /**
+  var Matrix, Point;
+  /***
    * Create a new point with given x and y coordinates. If no arguments are given
    * defaults to (0, 0).
    * @name Point
    * @param {Number} [x]
    * @param {Number} [y]
    * @constructor
-   */
-  function Point(x, y) {
+  */
+  Point = function(x, y) {
     return {
-      /**
+      /***
        * The x coordinate of this point.
        * @name x
        * @fieldOf Point#
-       */
+      */
       x: x || 0,
-      /**
+      /***
        * The y coordinate of this point.
        * @name y
        * @fieldOf Point#
-       */
+      */
       y: y || 0,
-      /**
+      /***
        * Adds a point to this one and returns the new point.
        * @name add
        * @methodOf Point#
@@ -999,11 +850,11 @@ $(function() {
        * @param {Point} other The point to add this point to.
        * @returns A new point, the sum of both.
        * @type Point
-       */
+      */
       add: function(other) {
         return Point(this.x + other.x, this.y + other.y);
       },
-      /**
+      /***
        * Subtracts a point to this one and returns the new point.
        * @name subtract
        * @methodOf Point#
@@ -1011,11 +862,11 @@ $(function() {
        * @param {Point} other The point to subtract from this point.
        * @returns A new point, this - other.
        * @type Point
-       */
+      */
       subtract: function(other) {
         return Point(this.x - other.x, this.y - other.y);
       },
-      /**
+      /***
        * Scale this Point (Vector) by a constant amount.
        * @name scale
        * @methodOf Point#
@@ -1023,11 +874,11 @@ $(function() {
        * @param {Number} scalar The amount to scale this point by.
        * @returns A new point, this * scalar.
        * @type Point
-       */
+      */
       scale: function(scalar) {
         return Point(this.x * scalar, this.y * scalar);
       },
-      /**
+      /***
        * Determine whether this point is equal to another point.
        * @name equal
        * @methodOf Point#
@@ -1035,22 +886,22 @@ $(function() {
        * @param {Point} other The point to check for equality.
        * @returns true if the other point has the same x, y coordinates, false otherwise.
        * @type Boolean
-       */
+      */
       equal: function(other) {
         return this.x === other.x && this.y === other.y;
       },
-      /**
+      /***
        * Calculate the magnitude of this Point (Vector).
        * @name magnitude
        * @methodOf Point#
        *
        * @returns The magnitude of this point as if it were a vector from (0, 0) -> (x, y).
        * @type Number
-       */
+      */
       magnitude: function() {
         return Point.distance(Point(0, 0), this);
       },
-      /**
+      /***
        * Calculate the dot product of this point and another point (Vector).
        * @name dot
        * @methodOf Point#
@@ -1058,14 +909,14 @@ $(function() {
        * @param {Point} other The point to dot with this point.
        * @returns The dot product of this point dot other as a scalar value.
        * @type Number
-       */
+      */
       dot: function(other) {
         return this.x * other.x + this.y * other.y;
       },
-      /**
-       * Calculate the cross product of this point and another point (Vector). 
+      /***
+       * Calculate the cross product of this point and another point (Vector).
        * Usually cross products are thought of as only applying to three dimensional vectors,
-       * but z can be treated as zero. The result of this method is interpreted as the magnitude 
+       * but z can be treated as zero. The result of this method is interpreted as the magnitude
        * of the vector result of the cross product between [x1, y1, 0] x [x2, y2, 0]
        * perpendicular to the xy plane.
        * @name cross
@@ -1074,11 +925,11 @@ $(function() {
        * @param {Point} other The point to cross with this point.
        * @returns The cross product of this point with the other point as scalar value.
        * @type Number
-       */
+      */
       cross: function(other) {
         return this.x * other.y - other.x * this.y;
       },
-      /**
+      /***
        * The norm of a vector is the unit vector pointing in the same direction. This method
        * treats the point as though it is a vector from the origin to (x, y).
        * @name norm
@@ -1086,22 +937,22 @@ $(function() {
        *
        * @returns The unit vector pointing in the same direction as this vector.
        * @type Point
-       */
+      */
       norm: function() {
-        return this.scale(1.0/this.length());
+        return this.scale(1.0 / this.length());
       },
-      /**
+      /***
        * Computed the length of this point as though it were a vector from (0,0) to (x,y)
        * @name length
        * @methodOf Point#
        *
        * @returns The length of the vector from the origin to this point.
        * @type Number
-       */
+      */
       length: function() {
         return Math.sqrt(this.dot(this));
       },
-      /**
+      /***
        * Computed the Euclidean between this point and another point.
        * @name distance
        * @methodOf Point#
@@ -1109,50 +960,43 @@ $(function() {
        * @param {Point} other The point to compute the distance to.
        * @returns The distance between this point and another point.
        * @type Number
-       */
+      */
       distance: function(other) {
         return Point.distance(this, other);
       }
-    }
-  }
-
-  /**
+    };
+  };
+  /***
    * @param {Point} p1
    * @param {Point} p2
    * @type Number
    * @returns The Euclidean distance between two points.
-   */
+  */
   Point.distance = function(p1, p2) {
     return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
   };
-
-  /**
+  /***
    * Construct a point on the unit circle for the given angle.
    *
    * @param {Number} angle The angle in radians
    * @type Point
    * @returns The point on the unit circle.
-   */
+  */
   Point.fromAngle = function(angle) {
     return Point(Math.cos(angle), Math.sin(angle));
   };
-
-  /**
+  /***
    * If you have two dudes, one standing at point p1, and the other
    * standing at point p2, then this method will return the direction
    * that the dude standing at p1 will need to face to look at p2.
    * @param {Point} p1 The starting point.
    * @param {Point} p2 The ending point.
    * @returns The direction from p1 to p2 in radians.
-   */
+  */
   Point.direction = function(p1, p2) {
-    return Math.atan2(
-      p2.y - p1.y,
-      p2.x - p1.x
-    );
+    return Math.atan2(p2.y - p1.y, p2.x - p1.x);
   };
-
-  /**
+  /***
    * <pre>
    *  _        _
    * | a  c tx  |
@@ -1173,46 +1017,44 @@ $(function() {
    * @param {Number} [tx]
    * @param {Number} [ty]
    * @constructor
-   */
-  function Matrix(a, b, c, d, tx, ty) {
-    a = a !== undefined ? a : 1;
-    d = d !== undefined ? d : 1;
-
+  */
+  Matrix = function(a, b, c, d, tx, ty) {
+    a = (typeof a !== "undefined" && a !== null) ? a : 1;
+    d = (typeof d !== "undefined" && d !== null) ? d : 1;
     return {
-      /**
+      /***
        * @name a
        * @fieldOf Matrix#
-       */
+      */
       a: a,
-      /**
+      /***
        * @name b
        * @fieldOf Matrix#
-       */
+      */
       b: b || 0,
-      /**
+      /***
        * @name c
        * @fieldOf Matrix#
-       */
+      */
       c: c || 0,
-      /**
+      /***
        * @name d
        * @fieldOf Matrix#
-       */
+      */
       d: d,
-      /**
+      /***
        * @name tx
        * @fieldOf Matrix#
-       */
+      */
       tx: tx || 0,
-      /**
+      /***
        * @name ty
        * @fieldOf Matrix#
-       */
+      */
       ty: ty || 0,
-
-      /**
+      /***
        * Returns the result of this matrix multiplied by another matrix
-       * combining the geometric effects of the two. In mathematical terms, 
+       * combining the geometric effects of the two. In mathematical terms,
        * concatenating two matrixes is the same as combining them using matrix multiplication.
        * If this matrix is A and the matrix passed in is B, the resulting matrix is A x B
        * http://mathworld.wolfram.com/MatrixMultiplication.html
@@ -1222,38 +1064,26 @@ $(function() {
        * @param {Matrix} matrix The matrix to multiply this matrix by.
        * @returns The result of the matrix multiplication, a new matrix.
        * @type Matrix
-       */
+      */
       concat: function(matrix) {
-        return Matrix(
-          this.a * matrix.a + this.c * matrix.b,
-          this.b * matrix.a + this.d * matrix.b,
-          this.a * matrix.c + this.c * matrix.d,
-          this.b * matrix.c + this.d * matrix.d,
-          this.a * matrix.tx + this.c * matrix.ty + this.tx,
-          this.b * matrix.tx + this.d * matrix.ty + this.ty
-        );
+        return Matrix(this.a * matrix.a + this.c * matrix.b, this.b * matrix.a + this.d * matrix.b, this.a * matrix.c + this.c * matrix.d, this.b * matrix.c + this.d * matrix.d, this.a * matrix.tx + this.c * matrix.ty + this.tx, this.b * matrix.tx + this.d * matrix.ty + this.ty);
       },
-
-      /**
-       * Given a point in the pretransform coordinate space, returns the coordinates of 
-       * that point after the transformation occurs. Unlike the standard transformation 
-       * applied using the transformPoint() method, the deltaTransformPoint() method's 
-       * transformation does not consider the translation parameters tx and ty.
+      /***
+       * Given a point in the pretransform coordinate space, returns the coordinates of
+       * that point after the transformation occurs. Unlike the standard transformation
+       * applied using the transformPoint() method, the deltaTransformPoint() method
+       * does not consider the translation parameters tx and ty.
        * @name deltaTransformPoint
        * @methodOf Matrix#
        * @see #transformPoint
        *
        * @return A new point transformed by this matrix ignoring tx and ty.
        * @type Point
-       */
+      */
       deltaTransformPoint: function(point) {
-        return Point(
-          this.a * point.x + this.c * point.y,
-          this.b * point.x + this.d * point.y
-        );
+        return Point(this.a * point.x + this.c * point.y, this.b * point.x + this.d * point.y);
       },
-
-      /**
+      /***
        * Returns the inverse of the matrix.
        * http://mathworld.wolfram.com/MatrixInverse.html
        * @name inverse
@@ -1261,20 +1091,13 @@ $(function() {
        *
        * @returns A new matrix that is the inverse of this matrix.
        * @type Matrix
-       */
+      */
       inverse: function() {
-        var determinant = this.a * this.d - this.b * this.c;
-        return Matrix(
-          this.d / determinant,
-          -this.b / determinant,
-          -this.c / determinant,
-          this.a / determinant,
-          (this.c * this.ty - this.d * this.tx) / determinant,
-          (this.b * this.tx - this.a * this.ty) / determinant
-        );
+        var determinant;
+        determinant = this.a * this.d - this.b * this.c;
+        return Matrix(this.d / determinant, -this.b / determinant, -this.c / determinant, this.a / determinant, (this.c * this.ty - this.d * this.tx) / determinant, (this.b * this.tx - this.a * this.ty) / determinant);
       },
-
-      /**
+      /***
        * Returns a new matrix that corresponds this matrix multiplied by a
        * a rotation matrix.
        * @name rotate
@@ -1285,12 +1108,11 @@ $(function() {
        * @param {Point} [aboutPoint] The point about which this rotation occurs. Defaults to (0,0).
        * @returns A new matrix, rotated by the specified amount.
        * @type Matrix
-       */
+      */
       rotate: function(theta, aboutPoint) {
         return this.concat(Matrix.rotation(theta, aboutPoint));
       },
-
-      /**
+      /***
        * Returns a new matrix that corresponds this matrix multiplied by a
        * a scaling matrix.
        * @name scale
@@ -1301,13 +1123,12 @@ $(function() {
        * @param {Number} [sy]
        * @param {Point} [aboutPoint] The point that remains fixed during the scaling
        * @type Matrix
-       */
+      */
       scale: function(sx, sy, aboutPoint) {
         return this.concat(Matrix.scale(sx, sy, aboutPoint));
       },
-
-      /**
-       * Returns the result of applying the geometric transformation represented by the 
+      /***
+       * Returns the result of applying the geometric transformation represented by the
        * Matrix object to the specified point.
        * @name transformPoint
        * @methodOf Matrix#
@@ -1315,15 +1136,11 @@ $(function() {
        *
        * @returns A new point with the transformation applied.
        * @type Point
-       */
+      */
       transformPoint: function(point) {
-        return Point(
-          this.a * point.x + this.c * point.y + this.tx,
-          this.b * point.x + this.d * point.y + this.ty
-        );
+        return Point(this.a * point.x + this.c * point.y + this.tx, this.b * point.x + this.d * point.y + this.ty);
       },
-
-      /**
+      /***
        * Translates the matrix along the x and y axes, as specified by the tx and ty parameters.
        * @name translate
        * @methodOf Matrix#
@@ -1333,44 +1150,31 @@ $(function() {
        * @param {Number} ty The translation along the y axis.
        * @returns A new matrix with the translation applied.
        * @type Matrix
-       */
+      */
       translate: function(tx, ty) {
         return this.concat(Matrix.translation(tx, ty));
       }
-    }
-  }
-
-  /**
+    };
+  };
+  /***
    * Creates a matrix transformation that corresponds to the given rotation,
    * around (0,0) or the specified point.
    * @see Matrix#rotate
    *
    * @param {Number} theta Rotation in radians.
    * @param {Point} [aboutPoint] The point about which this rotation occurs. Defaults to (0,0).
-   * @returns 
+   * @returns
    * @type Matrix
-   */
+  */
   Matrix.rotation = function(theta, aboutPoint) {
-    var rotationMatrix = Matrix(
-      Math.cos(theta),
-      Math.sin(theta),
-      -Math.sin(theta),
-      Math.cos(theta)
-    );
-
-    if(aboutPoint) {
-      rotationMatrix =
-        Matrix.translation(aboutPoint.x, aboutPoint.y).concat(
-          rotationMatrix
-        ).concat(
-          Matrix.translation(-aboutPoint.x, -aboutPoint.y)
-        );
+    var rotationMatrix;
+    rotationMatrix = Matrix(Math.cos(theta), Math.sin(theta), -Math.sin(theta), Math.cos(theta));
+    if (typeof aboutPoint !== "undefined" && aboutPoint !== null) {
+      rotationMatrix = Matrix.translation(aboutPoint.x, aboutPoint.y).concat(rotationMatrix).concat(Matrix.translation(-aboutPoint.x, -aboutPoint.y));
     }
-
     return rotationMatrix;
   };
-
-  /**
+  /***
    * Returns a matrix that corresponds to scaling by factors of sx, sy along
    * the x and y axis respectively.
    * If only one parameter is given the matrix is scaled uniformly along both axis.
@@ -1383,25 +1187,17 @@ $(function() {
    * @param {Point} [aboutPoint] The point about which the scaling occurs. Defaults to (0,0).
    * @returns A matrix transformation representing scaling by sx and sy.
    * @type Matrix
-   */
+  */
   Matrix.scale = function(sx, sy, aboutPoint) {
+    var scaleMatrix;
     sy = sy || sx;
-
-    var scaleMatrix = Matrix(sx, 0, 0, sy);
-
-    if(aboutPoint) {
-      scaleMatrix =
-        Matrix.translation(aboutPoint.x, aboutPoint.y).concat(
-          scaleMatrix
-        ).concat(
-          Matrix.translation(-aboutPoint.x, -aboutPoint.y)
-        );
+    scaleMatrix = Matrix(sx, 0, 0, sy);
+    if (aboutPoint) {
+      scaleMatrix = Matrix.translation(aboutPoint.x, aboutPoint.y).concat(scaleMatrix).concat(Matrix.translation(-aboutPoint.x, -aboutPoint.y));
     }
-
     return scaleMatrix;
   };
-
-  /**
+  /***
    * Returns a matrix that corresponds to a translation of tx, ty.
    * @see Matrix#translate
    *
@@ -1409,35 +1205,31 @@ $(function() {
    * @param {Number} ty The amount to translate in the y direction.
    * @return A matrix transformation representing a translation by tx and ty.
    * @type Matrix
-   */
+  */
   Matrix.translation = function(tx, ty) {
     return Matrix(1, 0, 0, 1, tx, ty);
   };
-
-  /**
+  /***
    * A constant representing the identity matrix.
    * @name IDENTITY
    * @fieldOf Matrix
-   */
+  */
   Matrix.IDENTITY = Matrix();
-  /**
+  /***
    * A constant representing the horizontal flip transformation matrix.
    * @name HORIZONTAL_FLIP
    * @fieldOf Matrix
-   */
+  */
   Matrix.HORIZONTAL_FLIP = Matrix(-1, 0, 0, 1);
-  /**
+  /***
    * A constant representing the vertical flip transformation matrix.
    * @name VERTICAL_FLIP
    * @fieldOf Matrix
-   */
+  */
   Matrix.VERTICAL_FLIP = Matrix(1, 0, 0, -1);
-  
-  // Export to window
   window["Point"] = Point;
-  window["Matrix"] = Matrix;
-}());
-;
+  return (window["Matrix"] = Matrix);
+})();;
 window.Mouse = (function() {
   var Mouse, buttons, set_button;
   Mouse = {
@@ -1468,25 +1260,50 @@ window.Mouse = (function() {
   });
   return Mouse;
 })();;
-/**
+/***
+ * Returns the absolute value of this number.
+ * @type Number
  * @returns The absolute value of the number.
- */
+*/
 Number.prototype.abs = function() {
   return Math.abs(this);
 };
-
-/**
+/***
+ * Returns the mathematical ceiling of this number.
+ * @type Number
  * @returns The number truncated to the nearest integer of greater than or equal value.
- * 
+ *
  * (4.9).ceil(); // => 5
  * (4.2).ceil(); // => 5
  * (-1.2).ceil(); // => -1
- */
+*/
 Number.prototype.ceil = function() {
   return Math.ceil(this);
 };
-
-/**
+/***
+ * Returns the mathematical floor of this number.
+ * @type Number
+ * @returns The number truncated to the nearest integer of less than or equal value.
+ *
+ * (4.9).floor(); // => 4
+ * (4.2).floor(); // => 4
+ * (-1.2).floor(); // => -2
+*/
+Number.prototype.floor = function() {
+  return Math.floor(this);
+};
+/***
+ * Returns this number rounded to the nearest integer.
+ * @type Number
+ * @returns The number rounded to the nearest integer.
+ *
+ * (4.5).round(); // => 5
+ * (4.4).round(); // => 4
+*/
+Number.prototype.round = function() {
+  return Math.round(this);
+};
+/***
  * Returns a number whose value is limited to the given range.
  *
  * Example: limit the output of this computation to between 0 and 255
@@ -1498,23 +1315,11 @@ Number.prototype.ceil = function() {
  * @param {Number} max The upper boundary of the output range
  * @returns A number in the range [min, max]
  * @type Number
- */
+*/
 Number.prototype.clamp = function(min, max) {
   return Math.min(Math.max(this, min), max);
 };
-
-/**
- * @returns The number truncated to the nearest integer of less than or equal value.
- * 
- * (4.9).floor(); // => 4
- * (4.2).floor(); // => 4
- * (-1.2).floor(); // => -2
- */
-Number.prototype.floor = function() {
-  return Math.floor(this);
-};
-
-/**
+/***
  * A mod method useful for array wrapping. The range of the function is
  * constrained to remain in bounds of array indices.
  *
@@ -1526,32 +1331,22 @@ Number.prototype.floor = function() {
  * @param {Number} base
  * @returns An integer between 0 and (base - 1) if base is positive.
  * @type Number
- */
+*/
 Number.prototype.mod = function(base) {
-  var result = this % base;
-
-  if(result < 0 && base > 0) {
+  var result;
+  result = this % base;
+  if (result < 0 && base > 0) {
     result += base;
   }
-
   return result;
 };
-
-/**
- * @returns The number rounded to the nearest integer.
- * 
- * (4.5).round(); // => 5
- * (4.4).round(); // => 4
- */
-Number.prototype.round = function() {
-  return Math.round(this);
-};
-
-/**
+/***
+ * Get the sign of this number as an integer (1, -1, or 0).
+ * @type Number
  * @returns The sign of this number, 0 if the number is 0.
- */
+*/
 Number.prototype.sign = function() {
-  if(this > 0) {
+  if (this > 0) {
     return 1;
   } else if (this < 0) {
     return -1;
@@ -1559,31 +1354,30 @@ Number.prototype.sign = function() {
     return 0;
   }
 };
-
-/**
- * Calls iterator the specified number of times, passing in the number of the 
- * current iteration as a parameter: 0 on first call, 1 on the second call, etc. 
- * 
- * @param {Function} iterator The iterator takes a single parameter, the number 
+/***
+ * Calls iterator the specified number of times, passing in the number of the
+ * current iteration as a parameter: 0 on first call, 1 on the second call, etc.
+ *
+ * @param {Function} iterator The iterator takes a single parameter, the number
  * of the current iteration.
  * @param {Object} [context] The optional context parameter specifies an object
  * to treat as <code>this</code> in the iterator block.
- * 
+ *
  * @returns The number of times the iterator was called.
  * @type Number
- */
+*/
 Number.prototype.times = function(iterator, context) {
-  for(var i = 0; i < this; i++) {
+  var i;
+  i = -1;
+  while (++i < this) {
     iterator.call(context, i);
   }
-
   return i;
 };
-
-/**
- * Returns the the nearest grid resolution less than or equal to the number. 
+/***
+ * Returns the the nearest grid resolution less than or equal to the number.
  *
- *   EX: 
+ *   EX:
  *    (7).snap(8) => 0
  *    (4).snap(8) => 0
  *    (12).snap(8) => 8
@@ -1591,93 +1385,78 @@ Number.prototype.times = function(iterator, context) {
  * @param {Number} resolution The grid resolution to snap to.
  * @returns The nearest multiple of resolution lower than the number.
  * @type Number
- */
+*/
 Number.prototype.snap = function(resolution) {
-  return (this / resolution).floor() * resolution;
+  var n;
+  n = this / resolution;
+  1 / 1;
+  return n.floor() * resolution;
 };
-
 Number.prototype.toColorPart = function() {
-  var s = parseInt(this.clamp(0, 255), 10).toString(16);
-  if(s.length == 1) {
+  var s;
+  s = parseInt(this.clamp(0, 255), 10).toString(16);
+  if (s.length === 1) {
     s = '0' + s;
   }
-
   return s;
 };
-
 Number.prototype.approach = function(target, maxDelta) {
   return (target - this).clamp(-maxDelta, maxDelta) + this;
 };
-
 Number.prototype.approachByRatio = function(target, ratio) {
   return this.approach(target, this * ratio);
 };
-
 Number.prototype.approachRotation = function(target, maxDelta) {
-  var twoPi = 2 * Math.PI;
-
-  while(target > this + Math.PI) {
-    target -= twoPi
+  while (target > this + Math.PI) {
+    target -= Math.TAU;
   }
-
-  while(target < this - Math.PI) {
-    target += twoPi
+  while (target < this - Math.PI) {
+    target += Math.TAU;
   }
-
   return (target - this).clamp(-maxDelta, maxDelta) + this;
 };
-
-/**
- * @returns This number constrained between -PI and PI.
- */
+/***
+* @returns This number constrained between -PI and PI.
+*/
 Number.prototype.constrainRotation = function() {
-  var twoPi = 2 * Math.PI;
-  
-  var target = this;
-
-  while(target > Math.PI) {
-    target -= twoPi
+  var target;
+  target = this;
+  while (target > Math.PI) {
+    target -= Math.TAU;
   }
-
-  while(target < -Math.PI) {
-    target += twoPi
+  while (target < -Math.PI) {
+    target += MATH.TAU;
   }
-      
   return target;
 };
-
 Number.prototype.d = function(sides) {
-  var sum = 0;
-
+  var sum;
+  sum = 0;
   this.times(function() {
-    sum += rand(sides) + 1;
+    return sum += rand(sides) + 1;
   });
-
   return sum;
 };
-
-/** The mathematical circle constant of 1 turn. */
-Math.TAU = 2 * Math.PI;
-
-;
-(function($){
-  $.fn.powerCanvas = function(options) {
-    options = options || {};
-
-    var canvas = this.get(0);
-
-    if(!canvas) {
-      return this;
-    }
-
-    var context;
-
-    /**
-     * @name PowerCanvas
-     * @constructor
-     */
-    var $canvas = $(canvas).extend({
-      /**
+/***
+* The mathematical circle constant of 1 turn.
+* @name TAU
+* @fieldOf Math
+*/
+Math.TAU = 2 * Math.PI;;
+var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice;
+(function($) {
+  return ($.fn.powerCanvas = function(options) {
+    var $canvas, canvas, context;
+    options || (options = {});
+    canvas = this.get(0);
+    context = undefined;
+    /***
+    * PowerCanvas provides a convenient wrapper for working with Context2d.
+    * @name PowerCanvas
+    * @constructor
+    */
+    $canvas = $(canvas).extend({
+      /***
        * Passes this canvas to the block with the given matrix transformation
        * applied. All drawing methods called within the block will draw
        * into the canvas with the transformation applied. The transformation
@@ -1689,79 +1468,94 @@ Math.TAU = 2 * Math.PI;
        * @param {Matrix} matrix
        * @param {Function} block
        * @returns this
-       */
+      */
       withTransform: function(matrix, block) {
         context.save();
-
-        context.transform(
-          matrix.a,
-          matrix.b,
-          matrix.c,
-          matrix.d,
-          matrix.tx,
-          matrix.ty
-        );
-
+        context.transform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty);
         try {
           block(this);
         } finally {
           context.restore();
         }
-
         return this;
       },
-
       clear: function() {
         context.clearRect(0, 0, canvas.width, canvas.height);
-
         return this;
       },
-      
+      clearRect: function(x, y, width, height) {
+        context.clearRect(x, y, width, height);
+        return this;
+      },
       context: function() {
         return context;
       },
-      
       element: function() {
         return canvas;
       },
-      
+      globalAlpha: function(newVal) {
+        if (typeof newVal !== "undefined" && newVal !== null) {
+          context.globalAlpha = newVal;
+          return this;
+        } else {
+          return context.globalAlpha;
+        }
+      },
+      compositeOperation: function(newVal) {
+        if (typeof newVal !== "undefined" && newVal !== null) {
+          context.globalCompositeOperation = newVal;
+          return this;
+        } else {
+          return context.globalCompositeOperation;
+        }
+      },
       createLinearGradient: function(x0, y0, x1, y1) {
         return context.createLinearGradient(x0, y0, x1, y1);
       },
-      
       createRadialGradient: function(x0, y0, r0, x1, y1, r1) {
         return context.createRadialGradient(x0, y0, r0, x1, y1, r1);
       },
-      
+      buildRadialGradient: function(c1, c2, stops) {
+        var _ref, color, gradient, position;
+        gradient = context.createRadialGradient(c1.x, c1.y, c1.radius, c2.x, c2.y, c2.radius);
+        _ref = stops;
+        for (position in _ref) {
+          if (!__hasProp.call(_ref, position)) continue;
+          color = _ref[position];
+          gradient.addColorStop(position, color);
+        }
+        return gradient;
+      },
       createPattern: function(image, repitition) {
         return context.createPattern(image, repitition);
       },
-
       drawImage: function(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
         context.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-
         return this;
       },
-      
       drawLine: function(x1, y1, x2, y2, width) {
-        width = width || 3;
-
+        if (arguments.length === 3) {
+          width = x2;
+          x2 = y1.x;
+          y2 = y1.y;
+          y1 = x1.y;
+          x1 = x1.x;
+        }
+        width || (width = 3);
         context.lineWidth = width;
         context.beginPath();
         context.moveTo(x1, y1);
         context.lineTo(x2, y2);
         context.closePath();
         context.stroke();
+        return this;
       },
-
       fill: function(color) {
         $canvas.fillColor(color);
         context.fillRect(0, 0, canvas.width, canvas.height);
-
         return this;
       },
-
-      /**
+      /***
        * Fills a circle at the specified position with the specified
        * radius and color.
        *
@@ -1772,24 +1566,22 @@ Math.TAU = 2 * Math.PI;
        * @param {Number} y
        * @param {Number} radius
        * @param {Number} color
-       * @see PowerCanvas#fillColor 
+       * @see PowerCanvas#fillColor
        * @returns this
-       */
+      */
       fillCircle: function(x, y, radius, color) {
         $canvas.fillColor(color);
         context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI*2, true);
+        context.arc(x, y, radius, 0, Math.TAU, true);
         context.closePath();
         context.fill();
-
         return this;
       },
-
-      /**
+      /***
        * Fills a rectangle with the current fillColor
        * at the specified position with the specified
-       * width and height 
-      
+       * width and height
+
        * @name fillRect
        * @methodOf PowerCanvas#
        *
@@ -1797,25 +1589,28 @@ Math.TAU = 2 * Math.PI;
        * @param {Number} y
        * @param {Number} width
        * @param {Number} height
-       * @see PowerCanvas#fillColor 
+       * @see PowerCanvas#fillColor
        * @returns this
-       */      
-      
+      */
       fillRect: function(x, y, width, height) {
         context.fillRect(x, y, width, height);
-
         return this;
       },
-
-      /**
+      fillShape: function() {
+        var points;
+        points = __slice.call(arguments, 0);
+        context.beginPath();
+        points.each(function(point, i) {
+          return i === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y);
+        });
+        context.lineTo(points[0].x, points[0].y);
+        return context.fill();
+      },
+      /***
       * Adapted from http://js-bits.blogspot.com/2010/07/canvas-rounded-corner-rectangles.html
       */
-      
       fillRoundRect: function(x, y, width, height, radius, strokeWidth) {
-        if (!radius) {
-          radius = 5;
-        }
-        
+        radius || (radius = 5);
         context.beginPath();
         context.moveTo(x + radius, y);
         context.lineTo(x + width - radius, y);
@@ -1825,116 +1620,104 @@ Math.TAU = 2 * Math.PI;
         context.lineTo(x + radius, y + height);
         context.quadraticCurveTo(x, y + height, x, y + height - radius);
         context.lineTo(x, y + radius);
-        context.quadraticCurveTo(x, y, x + radius, y);        
+        context.quadraticCurveTo(x, y, x + radius, y);
         context.closePath();
-                  
         if (strokeWidth) {
-          context.lineWidth = strokeWidth;  
+          context.lineWidth = strokeWidth;
           context.stroke();
         }
-        
-        context.fill();  
-    
-        return this;    
-      },       
-
-      fillText: function(text, x, y) {
-        context.fillText(text, x, y);
-
+        context.fill();
         return this;
       },
-
-      centerText: function(text, y) {
-        var textWidth = $canvas.measureText(text);
-
-        $canvas.fillText(text, (canvas.width - textWidth) / 2, y);
+      fillText: function(text, x, y) {
+        context.fillText(text, x, y);
+        return this;
       },
-
+      centerText: function(text, y) {
+        var textWidth;
+        textWidth = $canvas.measureText(text);
+        return $canvas.fillText(text, (canvas.width - textWidth) / 2, y);
+      },
       fillWrappedText: function(text, x, y, width) {
-        var tokens = text.split(" ");
-        var tokens2 = text.split(" ");
-        var lineHeight = 16;
-
+        var lineHeight, tokens, tokens2;
+        tokens = text.split(" ");
+        tokens2 = text.split(" ");
+        lineHeight = 16;
         if ($canvas.measureText(text) > width) {
-          if (tokens.length % 2 == 0) {
-            tokens2 = tokens.splice(tokens.length / 2, (tokens.length / 2), "");
+          if (tokens.length % 2 === 0) {
+            tokens2 = tokens.splice(tokens.length / 2, tokens.length / 2, "");
           } else {
             tokens2 = tokens.splice(tokens.length / 2 + 1, (tokens.length / 2) + 1, "");
           }
           context.fillText(tokens.join(" "), x, y);
-          context.fillText(tokens2.join(" "), x, y + lineHeight);
+          return context.fillText(tokens2.join(" "), x, y + lineHeight);
         } else {
-          context.fillText(tokens.join(" "), x, y + lineHeight);
+          return context.fillText(tokens.join(" "), x, y + lineHeight);
         }
       },
-
       fillColor: function(color) {
-        if(color) {
-          context.fillStyle = color.toString();
+        if (color) {
+          if (color.channels) {
+            context.fillStyle = color.toString();
+          } else {
+            context.fillStyle = color;
+          }
           return this;
         } else {
           return context.fillStyle;
         }
       },
-
       font: function(font) {
-        context.font = font;
+        if (typeof font !== "undefined" && font !== null) {
+          context.font = font;
+          return this;
+        } else {
+          return context.font;
+        }
       },
-
       measureText: function(text) {
         return context.measureText(text).width;
       },
-
       putImageData: function(imageData, x, y) {
         context.putImageData(imageData, x, y);
-
         return this;
       },
-
       strokeColor: function(color) {
-        if(color) {
-          context.strokeStyle = color.toString();
+        if (color) {
+          if (color.channels) {
+            context.strokeStyle = color.toString();
+          } else {
+            context.strokeStyle = color;
+          }
           return this;
         } else {
           return context.strokeStyle;
         }
       },
-      
       strokeRect: function(x, y, width, height) {
         context.strokeRect(x, y, width, height);
-
         return this;
       },
-
       textAlign: function(textAlign) {
         context.textAlign = textAlign;
         return this;
       },
-
       height: function() {
         return canvas.height;
       },
-
       width: function() {
         return canvas.width;
       }
     });
-
-    if(canvas.getContext) {
+    if ((typeof canvas === "undefined" || canvas === null) ? undefined : canvas.getContext) {
       context = canvas.getContext('2d');
-
-      if(options.init) {
+      if (options.init) {
         options.init($canvas);
       }
-
       return $canvas;
-    } else {
-      return false;
     }
-
-  };
-})(jQuery);
-;
+  });
+})(jQuery);;
 (function($) {
   window.Random = $.extend(window.Random, {
     angle: function() {
@@ -1996,7 +1779,31 @@ Math.TAU = 2 * Math.PI;
   return (window.Local = $.extend(window.Local, {
     get: retrieve,
     set: store,
-    put: store
+    put: store,
+    /***
+    Access an instance of Local with a specified prefix.
+
+    @name new
+    @methodOf Local
+
+    @param {String} prefix
+    @type Local
+    @returns An interface to local storage with the given prefix applied.
+    */
+    "new": function(prefix) {
+      prefix || (prefix = "");
+      return {
+        get: function(key) {
+          return retrieve("" + (prefix) + "_key");
+        },
+        set: function(key, value) {
+          return store("" + (prefix) + "_key", value);
+        },
+        put: function(key, value) {
+          return store("" + (prefix) + "_key", value);
+        }
+      };
+    }
   }));
 })(jQuery);;
 String.prototype.constantize = function() {
@@ -2013,6 +1820,9 @@ String.prototype.parse = function() {
   } catch (e) {
     return this;
   }
+};
+String.prototype.blank = function() {
+  return /^\s*$/.test(this);
 };;
 ;
 (function() {
@@ -2264,6 +2074,34 @@ var Collision;
 Collision = {
   rectangular: function(a, b) {
     return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  },
+  circular: function(a, b) {
+    var dx, dy, r;
+    r = a.radius + b.radius;
+    dx = b.x - a.x;
+    dy = b.y - a.y;
+    return r * r >= dx * dx + dy * dy;
+  },
+  rayCircle: function(source, direction, target) {
+    var dt, hit, intersection, intersectionToTarget, intersectionToTargetLength, laserToTarget, projection, projectionLength, radius;
+    radius = target.radius();
+    target = target.position();
+    laserToTarget = target.subtract(source);
+    projectionLength = direction.dot(laserToTarget);
+    if (projectionLength < 0) {
+      return false;
+    }
+    projection = direction.scale(projectionLength);
+    intersection = source.add(projection);
+    intersectionToTarget = target.subtract(intersection);
+    intersectionToTargetLength = intersectionToTarget.length();
+    if (intersectionToTargetLength < radius) {
+      hit = true;
+    }
+    if (hit) {
+      dt = Math.sqrt(radius * radius - intersectionToTargetLength * intersectionToTargetLength);
+      return (hit = direction.scale(projectionLength - dt).add(source));
+    }
   },
   rayRectangle: function(source, direction, target) {
     var areaPQ0, areaPQ1, hit, p0, p1, t, tX, tY, xval, xw, yval, yw;
@@ -3227,354 +3065,455 @@ StateMachine = () ->
   });
 })();;
 ;$(function(){ undefined });;
-Array.prototype.wrap = function(start, length) {
-  if(length != null) {
-    var end = start + length;
-    var result = [];
-
-    for(var i = start; i < end; i++) {
-      result.push(this[i.mod(this.length)]);
+var Camera;
+Camera = function(I) {
+  var self;
+  I || (I = {});
+  $.extend(I, {
+    camera: true,
+    solid: false,
+    width: 320,
+    height: 240
+  });
+  return (self = GameObject(I).extend({
+    draw: function(canvas) {
+      canvas.fillColor("rgba(0, 255, 255, 0.25)");
+      return canvas.fillRect(0, 0, I.width, I.height);
+    },
+    cameraTransform: function() {
+      return Matrix.translation(-I.x, -I.y);
     }
-
-    return result;
-  } else {
-    return this[start.mod(this.length)];
-  }
+  }));
+};;
+var CONTROLLERS, Controller;
+var __slice = Array.prototype.slice;
+Controller = function(actions) {
+  actions || (actions = {
+    up: "up",
+    right: "right",
+    down: "down",
+    left: "left",
+    A: "home",
+    B: "end",
+    C: "pageup",
+    D: "pagedown"
+  });
+  return {
+    actionDown: function() {
+      var triggers;
+      triggers = __slice.call(arguments, 0);
+      return triggers.inject(false, function(down, action) {
+        return down || keydown[actions[action]];
+      });
+    }
+  };
 };
-
-(function($){
-  $.fn.powerCanvas = function(options) {
-    options = options || {};
-
-    var canvas = this.get(0);
-
-    if(!canvas) {
-      return this;
+CONTROLLERS = [];
+[
+  {
+    up: "up",
+    right: "right",
+    down: "down",
+    left: "left",
+    A: "end",
+    B: "home",
+    C: "pagedown",
+    D: "pageup"
+  }, {
+    up: "o",
+    right: "q",
+    down: ";",
+    left: "a",
+    A: "2",
+    B: "1",
+    C: ",",
+    D: "'"
+  }, {
+    up: "u",
+    right: "k",
+    down: "j",
+    left: "e",
+    A: "4",
+    B: "3",
+    C: "p",
+    D: "."
+  }, {
+    up: "d",
+    right: "b",
+    down: "x",
+    left: "i",
+    A: "6",
+    B: "5",
+    C: "f",
+    D: "y"
+  }, {
+    up: "t",
+    right: "w",
+    down: "m",
+    left: "h",
+    A: "8",
+    B: "7",
+    C: "c",
+    D: "g"
+  }, {
+    up: "s",
+    right: "z",
+    down: "v",
+    left: "n",
+    A: "0",
+    B: "9",
+    C: "l",
+    D: "r"
+  }, {
+    up: "=",
+    right: "return",
+    down: "-",
+    left: "/",
+    A: "]",
+    B: "[",
+    C: "\\",
+    D: "backspace"
+  }
+].each(function(actions, i) {
+  return (CONTROLLERS[i] = Controller(actions));
+});;
+/***
+ * jQuery Hotkeys Plugin
+ * Copyright 2010, John Resig
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ *
+ * Based upon the plugin by Tzury Bar Yochay:
+ * http://github.com/tzuryby/hotkeys
+ *
+ * Original idea by:
+ * Binny V A, http://www.openjs.com/scripts/events/keyboard_shortcuts/
+*/
+(function(jQuery) {
+  var keyHandler;
+  jQuery.hotkeys = {
+    version: "0.8",
+    specialKeys: {
+      8: "backspace",
+      9: "tab",
+      13: "return",
+      16: "shift",
+      17: "ctrl",
+      18: "alt",
+      19: "pause",
+      20: "capslock",
+      27: "esc",
+      32: "space",
+      33: "pageup",
+      34: "pagedown",
+      35: "end",
+      36: "home",
+      37: "left",
+      38: "up",
+      39: "right",
+      40: "down",
+      45: "insert",
+      46: "del",
+      96: "0",
+      97: "1",
+      98: "2",
+      99: "3",
+      100: "4",
+      101: "5",
+      102: "6",
+      103: "7",
+      104: "8",
+      105: "9",
+      106: "*",
+      107: "+",
+      109: "-",
+      110: ".",
+      111: "/",
+      112: "f1",
+      113: "f2",
+      114: "f3",
+      115: "f4",
+      116: "f5",
+      117: "f6",
+      118: "f7",
+      119: "f8",
+      120: "f9",
+      121: "f10",
+      122: "f11",
+      123: "f12",
+      144: "numlock",
+      145: "scroll",
+      186: ";",
+      187: "=",
+      188: ",",
+      189: "-",
+      190: ".",
+      191: "/",
+      219: "[",
+      220: "\\",
+      221: "]",
+      222: "'",
+      224: "meta"
+    },
+    shiftNums: {
+      "`": "~",
+      "1": "!",
+      "2": "@",
+      "3": "#",
+      "4": "$",
+      "5": "%",
+      "6": "^",
+      "7": "&",
+      "8": "*",
+      "9": "(",
+      "0": ")",
+      "-": "_",
+      "=": "+",
+      ";": ":",
+      "'": "\"",
+      ",": "<",
+      ".": ">",
+      "/": "?",
+      "\\": "|"
     }
+  };
+  keyHandler = function(handleObj) {
+    var keys, origHandler;
+    if (typeof handleObj.data !== "string") {
+      return null;
+    }
+    origHandler = handleObj.handler;
+    keys = handleObj.data.toLowerCase().split(" ");
+    return (handleObj.handler = function(event) {
+      var _i, _len, _ref, _result, character, key, modif, possible, special;
+      if (this !== event.target && (/textarea|select/i.test(event.target.nodeName) || event.target.type === "text" || event.target.type === "password")) {
+        return null;
+      }
+      special = event.type !== "keypress" && jQuery.hotkeys.specialKeys[event.which];
+      character = String.fromCharCode(event.which).toLowerCase();
+      modif = "";
+      possible = {};
+      if (event.altKey && special !== "alt") {
+        modif += "alt+";
+      }
+      if (event.ctrlKey && special !== "ctrl") {
+        modif += "ctrl+";
+      }
+      if (event.metaKey && !event.ctrlKey && special !== "meta") {
+        modif += "meta+";
+      }
+      if (event.shiftKey && special !== "shift") {
+        modif += "shift+";
+      }
+      if (special) {
+        possible[modif + special] = true;
+      } else {
+        possible[modif + character] = true;
+        possible[modif + jQuery.hotkeys.shiftNums[character]] = true;
+        if (modif === "shift+") {
+          possible[jQuery.hotkeys.shiftNums[character]] = true;
+        }
+      }
+      _result = []; _ref = keys;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        key = _ref[_i];
+        if (possible[key]) {
+          return origHandler.apply(this, arguments);
+        }
+      }
+      return _result;
+    });
+  };
+  return jQuery.each(["keydown", "keyup", "keypress"], function() {
+    return (jQuery.event.special[this] = {
+      add: keyHandler
+    });
+  });
+})(jQuery);
 
-    var context;
+if(false) {
+  (function() {
+    var soundPath = "http://pixie.strd6.com/production/projects/8/sounds/";
+
+    function pathForPixieId(id) {
+      return soundPath + id + ".mp3";
+    }
 
     /**
-     * @name PowerCanvas
-     * @constructor
-     */
-    var $canvas = $(canvas).extend({
-      /**
-       * Passes this canvas to the block with the given matrix transformation
-       * applied. All drawing methods called within the block will draw
-       * into the canvas with the transformation applied. The transformation
-       * is removed at the end of the block, even if the block throws an error.
-       *
-       * @name withTransform
-       * @methodOf PowerCanvas#
-       *
-       * @param {Matrix} matrix
-       * @param {Function} block
-       * @returns this
-       */
-      withTransform: function(matrix, block) {
-        context.save();
+    * Create SMSound instances.
+    * @name Sound
+    * @constructor
+    *
+    * @param {Number} pixieId The id of the sound to create.
+    * @param [options] Options to pass to SoundManager
+    *
+    * @returns An SMSound instance for the given id.
+    * @type SMSound
+    */
+    function Sound(pixieId, options) {
+      options = options || {};
 
-        context.transform(
-          matrix.a,
-          matrix.b,
-          matrix.c,
-          matrix.d,
-          matrix.tx,
-          matrix.ty
-        );
+      options.id = pixieId;
+      options.url = pathForPixieId(pixieId);
+      options.multishot = true
 
-        try {
-          block(this);
-        } finally {
-          context.restore();
-        }
-
-        return this;
-      },
-
-      clear: function() {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-
-        return this;
-      },
-
-      context: function() {
-        return context;
-      },
-
-      element: function() {
-        return canvas;
-      },
-
-      createLinearGradient: function(x0, y0, x1, y1) {
-        return context.createLinearGradient(x0, y0, x1, y1);
-      },
-
-      createRadialGradient: function(x0, y0, r0, x1, y1, r1) {
-        return context.createRadialGradient(x0, y0, r0, x1, y1, r1);
-      },
-
-      createPattern: function(image, repitition) {
-        return context.createPattern(image, repitition);
-      },
-
-      drawImage: function(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
-        context.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-
-        return this;
-      },
-
-      drawLine: function(x1, y1, x2, y2, width) {
-        if(arguments.length === 3) {
-          width = x2;
-          x2 = y1.x;
-          y2 = y1.y;
-          y1 = x1.y
-          x1 = x1.x
-        }
-
-        width = width || 3;
-
-        context.lineWidth = width;
-        context.beginPath();
-        context.moveTo(x1, y1);
-        context.lineTo(x2, y2);
-        context.closePath();
-        context.stroke();
-      },
-
-      fill: function(color) {
-        $canvas.fillColor(color);
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        return this;
-      },
-
-      /**
-       * Fills a circle at the specified position with the specified
-       * radius and color.
-       *
-       * @name fillCircle
-       * @methodOf PowerCanvas#
-       *
-       * @param {Number} x
-       * @param {Number} y
-       * @param {Number} radius
-       * @param {Number} color
-       * @see PowerCanvas#fillColor
-       * @returns this
-       */
-      fillCircle: function(x, y, radius, color) {
-        $canvas.fillColor(color);
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI*2, true);
-        context.closePath();
-        context.fill();
-
-        return this;
-      },
-
-      /**
-       * Fills a rectangle with the current fillColor
-       * at the specified position with the specified
-       * width and height
-
-       * @name fillRect
-       * @methodOf PowerCanvas#
-       *
-       * @param {Number} x
-       * @param {Number} y
-       * @param {Number} width
-       * @param {Number} height
-       * @see PowerCanvas#fillColor
-       * @returns this
-       */
-
-      fillRect: function(x, y, width, height) {
-        context.fillRect(x, y, width, height);
-
-        return this;
-      },
-
-      /**
-      * Adapted from http://js-bits.blogspot.com/2010/07/canvas-rounded-corner-rectangles.html
-      */
-
-      fillRoundRect: function(x, y, width, height, radius, strokeWidth) {
-        if (!radius) {
-          radius = 5;
-        }
-
-        context.beginPath();
-        context.moveTo(x + radius, y);
-        context.lineTo(x + width - radius, y);
-        context.quadraticCurveTo(x + width, y, x + width, y + radius);
-        context.lineTo(x + width, y + height - radius);
-        context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        context.lineTo(x + radius, y + height);
-        context.quadraticCurveTo(x, y + height, x, y + height - radius);
-        context.lineTo(x, y + radius);
-        context.quadraticCurveTo(x, y, x + radius, y);
-        context.closePath();
-
-        if (strokeWidth) {
-          context.lineWidth = strokeWidth;
-          context.stroke();
-        }
-
-        context.fill();
-
-        return this;
-      },
-
-      fillText: function(text, x, y) {
-        context.fillText(text, x, y);
-
-        return this;
-      },
-
-      centerText: function(text, y) {
-        var textWidth = $canvas.measureText(text);
-
-        $canvas.fillText(text, (canvas.width - textWidth) / 2, y);
-      },
-
-      fillWrappedText: function(text, x, y, width) {
-        var tokens = text.split(" ");
-        var tokens2 = text.split(" ");
-        var lineHeight = 16;
-
-        if ($canvas.measureText(text) > width) {
-          if (tokens.length % 2 == 0) {
-            tokens2 = tokens.splice(tokens.length / 2, (tokens.length / 2), "");
-          } else {
-            tokens2 = tokens.splice(tokens.length / 2 + 1, (tokens.length / 2) + 1, "");
-          }
-          context.fillText(tokens.join(" "), x, y);
-          context.fillText(tokens2.join(" "), x, y + lineHeight);
-        } else {
-          context.fillText(tokens.join(" "), x, y + lineHeight);
-        }
-      },
-
-      fillColor: function(color) {
-        if(color) {
-          if(color.channels) {
-            context.fillStyle = color.toString();
-          } else {
-            context.fillStyle = color;
-          }
-          return this;
-        } else {
-          return context.fillStyle;
-        }
-      },
-
-      font: function(font) {
-        context.font = font;
-      },
-
-      measureText: function(text) {
-        return context.measureText(text).width;
-      },
-
-      putImageData: function(imageData, x, y) {
-        context.putImageData(imageData, x, y);
-
-        return this;
-      },
-
-      strokeColor: function(color) {
-        if(color) {
-          if(color.channels) {
-            context.strokeStyle = color.toString();
-          } else {
-            context.strokeStyle = color;
-          }
-          return this;
-        } else {
-          return context.strokeStyle;
-        }
-      },
-
-      strokeRect: function(x, y, width, height) {
-        context.strokeRect(x, y, width, height);
-
-        return this;
-      },
-
-      textAlign: function(textAlign) {
-        context.textAlign = textAlign;
-        return this;
-      },
-
-      height: function() {
-        return canvas.height;
-      },
-
-      width: function() {
-        return canvas.width;
-      }
-    });
-
-    if(canvas.getContext) {
-      context = canvas.getContext('2d');
-
-      if(options.init) {
-        options.init($canvas);
-      }
-
-      return $canvas;
-    } else {
-      return false;
+      return soundManager.createSound(options);
     }
 
-  };
-})(jQuery);
+    /**
+    * Loads initializes and plays the specified sound.
+    * @name play
+    * @methodOf Sound
+    *
+    * @param {Number} pixieId The id of the sound to play.
+    * @param [options] Options to pass to SoundManager
+    *
+    * @returns An SMSound instance.
+    * @type SMSound
+    */
+    Sound.play = function(pixieId, options) {
+      var sound = Sound(pixieId, options);
+      sound.play();
+
+      return sound;
+    };
+
+    window.Sound = Sound;
+  }());
+} else {
+  var Sound = (function($) {
+    // TODO: detecting audio with canPlay is f***ed
+    // Hopefully get more robust later
+    // audio.canPlayType("audio/ogg") === "maybe" WTF?
+    // http://ajaxian.com/archives/the-doctor-subscribes-html-5-audio-cross-browser-support
+    var format = ".wav";
+    var soundPath = "http://pixie.strd6.com/production/projects/8/sounds/";
+    var sounds = {};
+
+    function loadSoundChannel(name) {
+      var sound = $('<audio />').get(0);
+      sound.autobuffer = true;
+      sound.preload = 'auto';
+      sound.src = soundPath + name + format;
+
+      return sound;
+    }
+
+    function Sound(id, maxChannels) {
+      return {
+        play: function() {
+          Sound.play(id, maxChannels);
+        },
+
+        stop: function() {
+          Sound.stop(id);
+        }
+      }
+    }
+
+    return $.extend(Sound, {
+      play: function(id, maxChannels) {
+        // TODO: Too many channels crash Chrome!!!1
+        maxChannels = maxChannels || 4;
+
+        if(!sounds[id]) {
+          sounds[id] = [loadSoundChannel(id)];
+        }
+
+        var freeChannels = $.grep(sounds[id], function(sound) {
+          return sound.currentTime == sound.duration || sound.currentTime == 0
+        });
+
+        if(freeChannels[0]) {
+          try {
+            freeChannels[0].currentTime = 0;
+          } catch(e) {
+          }
+          freeChannels[0].play();
+        } else {
+          if(!maxChannels || sounds[id].length < maxChannels) {
+            var sound = loadSoundChannel(id);
+            sounds[id].push(sound);
+            sound.play();
+          }
+        }
+      },
+
+      playFromUrl: function(url) {
+        var sound = $('<audio />').get(0);
+        sound.src = url;
+
+        sound.play();
+
+        return sound;
+      },
+
+      stop: function(id) {
+        if(sounds[id]) {
+          sounds[id].stop();
+        }
+      }
+    });
+  }(jQuery));
+}
 ;;
 (function($) {
-  var defaults, shadowCanvas;
+  var defaults, hudCanvas, shadowCanvas;
   defaults = {
     FPS: 33.3333,
-    backgroundColor: "#FFFFFF"
+    ambientLight: 1,
+    backgroundColor: "#FFFFFF",
+    cameraTransform: Matrix.IDENTITY
   };
   shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas();
-  return (window.Engine = function(options) {
-    var FPS, age, backgroundColor, cameraTransform, canvas, construct, draw, intervalId, objects, paused, queuedObjects, savedState, self, step, update;
-    options = $.extend({}, defaults, options);
+  hudCanvas = $("<canvas width=640 height=480 />").powerCanvas();
+  hudCanvas.font("bold 9pt consolas, 'Courier New', 'andale mono', 'lucida console', monospace");
+  return (window.Engine = function(I) {
+    var age, canvas, construct, draw, intervalId, objects, paused, queuedObjects, savedState, self, step, update;
+    I || (I = {});
+    $.reverseMerge(I, defaults);
     intervalId = null;
     savedState = null;
     age = 0;
     paused = false;
-    backgroundColor = options.backgroundColor;
-    FPS = options.FPS;
     queuedObjects = [];
     objects = [];
-    cameraTransform = Matrix.IDENTITY;
     update = function() {
       objects = objects.select(function(object) {
         return object.update();
       });
       objects = objects.concat(queuedObjects);
-      return (queuedObjects = []);
+      queuedObjects = [];
+      return self.trigger("update");
     };
     draw = function() {
-      var lightSources;
-      lightSources = objects.inject(0, function(object) {
-        return object.illuminate;
-      });
-      shadowCanvas.withTransform(cameraTransform, function(shadowCanvas) {
-        return objects.each(function(object) {
-          return (typeof object.illuminate === "function" ? object.illuminate(shadowCanvas) : undefined);
+      var hud, shadowContext, shadows;
+      if (I.ambientLight < 1) {
+        shadowContext = shadowCanvas.context();
+        shadowContext.globalCompositeOperation = "source-over";
+        shadowCanvas.clear();
+        shadowCanvas.fill("rgba(0, 0, 0, " + (1 - I.ambientLight) + ")");
+        shadowContext.globalCompositeOperation = "destination-out";
+        shadowCanvas.withTransform(I.cameraTransform, function(shadowCanvas) {
+          return objects.each(function(object, i) {
+            if (object.illuminate) {
+              shadowContext.globalAlpha = 1;
+              return object.illuminate(shadowCanvas);
+            }
+          });
         });
-      });
-      return canvas.withTransform(cameraTransform, function(canvas) {
-        if (backgroundColor) {
-          canvas.fill(backgroundColor);
+      }
+      canvas.withTransform(I.cameraTransform, function(canvas) {
+        if (I.backgroundColor) {
+          canvas.fill(I.backgroundColor);
         }
-        return objects.invoke("draw", canvas);
+        return objects.invoke("draw", canvas, hudCanvas);
       });
+      if (I.ambientLight < 1) {
+        shadows = shadowCanvas.element();
+        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height);
+      }
+      hud = hudCanvas.element();
+      return canvas.drawImage(hud, 0, 0, hud.width, hud.height, 0, 0, hud.width, hud.height);
     };
     step = function() {
       if (!(paused)) {
@@ -3583,11 +3522,11 @@ Array.prototype.wrap = function(start, length) {
       }
       return draw();
     };
-    canvas = options.canvas || $("<canvas />").powerCanvas();
+    canvas = I.canvas || $("<canvas />").powerCanvas();
     construct = function(entityData) {
       return entityData["class"] ? entityData["class"].constantize()(entityData) : GameObject(entityData);
     };
-    return (self = {
+    self = Core(I).extend({
       add: function(entityData) {
         var obj;
         obj = construct(entityData);
@@ -3619,16 +3558,27 @@ Array.prototype.wrap = function(start, length) {
       eachObject: function(iterator) {
         return objects.each(iterator);
       },
-      collides: function(bounds) {
+      find: function(selector) {
+        var matcher, results;
+        results = [];
+        matcher = EngineSelector.generate(selector);
+        objects.each(function(object) {
+          if (matcher.match(object)) {
+            return results.push(object);
+          }
+        });
+        return $.extend(results, EngineSelector.instanceMethods);
+      },
+      collides: function(bounds, sourceObject) {
         return objects.inject(false, function(collided, object) {
-          return collided || (object.solid() && object.collides(bounds));
+          return collided || (object.solid() && (object !== sourceObject) && object.collides(bounds));
         });
       },
-      rayCollides: function(source, direction) {
+      rayCollides: function(source, direction, sourceObject) {
         var hits, nearestDistance, nearestHit;
         hits = objects.map(function(object) {
           var hit;
-          hit = object.solid() && Collision.rayRectangle(source, direction, object.centeredBounds());
+          hit = object.solid() && (object !== sourceObject) && Collision.rayRectangle(source, direction, object.centeredBounds());
           if (hit) {
             hit.object = object;
           }
@@ -3664,7 +3614,7 @@ Array.prototype.wrap = function(start, length) {
       start: function() {
         return !(intervalId) ? (intervalId = setInterval(function() {
           return step();
-        }, 1000 / FPS)) : null;
+        }, 1000 / I.FPS)) : null;
       },
       stop: function() {
         clearInterval(intervalId);
@@ -3680,34 +3630,3157 @@ Array.prototype.wrap = function(start, length) {
         return paused;
       },
       setFramerate: function(newFPS) {
-        FPS = newFPS;
+        I.FPS = newFPS;
         self.stop();
         return self.start();
       }
     });
+    self.attrAccessor("ambientLight");
+    self.attrAccessor("backgroundColor");
+    self.attrAccessor("cameraTransform");
+    self.include(Bindable);
+    return self;
   });
 })(jQuery);;
+var EngineSelector;
+EngineSelector = {
+  parse: function(selector) {
+    return selector.split(",").map(function(result) {
+      return result.trim();
+    });
+  },
+  process: function(item) {
+    var result;
+    result = /^(\w+)?#?([\w\-]+)?\.?([\w\-]+)?=?([\w\-]+)?/.exec(item);
+    if (result) {
+      if (result[4]) {
+        result[4] = result[4].parse();
+      }
+      return result.splice(1);
+    } else {
+      return [];
+    }
+  },
+  instanceMethods: {
+    set: function(attr, value) {
+      return this.each(function(item) {
+        return (item.I[attr] = value);
+      });
+    }
+  },
+  generate: function(selector) {
+    var ATTR, ATTR_VALUE, ID, TYPE, components;
+    components = EngineSelector.parse(selector).map(function(piece) {
+      return EngineSelector.process(piece);
+    });
+    TYPE = 0;
+    ID = 1;
+    ATTR = 2;
+    ATTR_VALUE = 3;
+    return {
+      match: function(object) {
+        var _i, _len, _ref, _ref2, attr, attrMatch, component, idMatch, typeMatch, value;
+        _ref = components;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          component = _ref[_i];
+          idMatch = (component[ID] === object.I.id) || !component[ID];
+          typeMatch = (component[TYPE] === object.I["class"]) || !component[TYPE];
+          if (attr = component[ATTR]) {
+            if (typeof (_ref2 = (value = component[ATTR_VALUE])) !== "undefined" && _ref2 !== null) {
+              attrMatch = (object.I[attr] === value);
+            } else {
+              attrMatch = object.I[attr];
+            }
+          } else {
+            attrMatch = true;
+          }
+          if (idMatch && typeMatch && attrMatch) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+  }
+};;
+var level1;
+level1 = [
+  {
+    "x": 0,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 32,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 64,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 96,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 128,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 160,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 192,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 224,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 256,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 288,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 320,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 352,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 384,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 416,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 448,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 480,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 512,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 544,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 576,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 608,
+    "y": 448,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20681,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 384,
+    "y": 320,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 20535,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 128,
+    "y": 96,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 20010,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 500,
+    "cacheStatic": true,
+    "intensity": 1,
+    "shadows": true
+  }, {
+    "x": 448,
+    "y": 96,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 19285,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 500,
+    "cacheStatic": true,
+    "intensity": 1,
+    "shadows": true
+  }, {
+    "x": 160,
+    "y": 160,
+    "color": "#CB8",
+    "width": 192,
+    "height": 128,
+    "solid": true,
+    "age": 18946,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 352,
+    "y": 224,
+    "color": "#CB8",
+    "width": 32,
+    "height": 64,
+    "solid": true,
+    "age": 18751,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "x": 184,
+    "y": 25,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 3749,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "disabled": 0,
+    "mobile": true,
+    "score": 0,
+    "shielding": false,
+    "shieldStrength": 32,
+    "sprite": null
+  }, {
+    "class": "Moogle",
+    "x": 304,
+    "y": 28,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 6
+    },
+    "excludedModules": ["Movable"],
+    "age": 3756,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "disabled": 0,
+    "mobile": true,
+    "score": 0,
+    "shielding": false,
+    "shieldStrength": 32,
+    "sprite": null
+  }
+];;
+var level2;
+level2 = [
+  {
+    "x": 384,
+    "y": 320,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 32350,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 128,
+    "y": 96,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 31825,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 500,
+    "intensity": 1,
+    "shadows": true
+  }, {
+    "x": 352,
+    "y": 224,
+    "color": "#CB8",
+    "width": 32,
+    "height": 64,
+    "solid": true,
+    "age": 30566,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "x": 512,
+    "y": 64,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 9075,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 1,
+    "radius": 500,
+    "shadows": true
+  }, {
+    "class": "Moogle",
+    "x": 363,
+    "y": 200,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "excludedModules": ["Movable"],
+    "age": 32492,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 32,
+    "score": 0
+  }, {
+    "x": 396,
+    "y": 296,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 17039,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 32,
+    "score": 0
+  }, {
+    "x": 0,
+    "y": 448,
+    "color": "#CB8",
+    "width": 640,
+    "height": 32,
+    "solid": true,
+    "age": 4961,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }
+];;
+var level3;
+level3 = [
+  {
+    "x": 384,
+    "y": 320,
+    "color": "#CB8",
+    "width": 64,
+    "height": 16,
+    "solid": true,
+    "age": 61483,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 160,
+    "y": 0,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 60958,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 500,
+    "intensity": 1,
+    "shadows": true,
+    "cacheStatic": true
+  }, {
+    "x": 336,
+    "y": 192,
+    "color": "#CB8",
+    "width": 128,
+    "height": 8,
+    "solid": true,
+    "age": 58889,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 480,
+    "y": 128,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 38208,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 1,
+    "radius": 500,
+    "shadows": true,
+    "cacheStatic": true
+  }, {
+    "x": 0,
+    "y": 448,
+    "color": "#CB8",
+    "width": 640,
+    "height": 32,
+    "solid": true,
+    "age": 34094,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 192,
+    "y": 64,
+    "color": "#CB8",
+    "width": 32,
+    "height": 320,
+    "solid": true,
+    "age": 27464,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "x": 0,
+    "y": 128,
+    "color": "#CB8",
+    "width": 96,
+    "height": 32,
+    "solid": true,
+    "age": 27464,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 224,
+    "y": 288,
+    "color": "#CB8",
+    "width": 64,
+    "height": 128,
+    "solid": true,
+    "age": 27464,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAACACAYAAAC7gW9qAAABSUlEQVR4Xu3dwQ2DMBBEUXNMS5xoIxWmDU60xBEi2YtAooN5kVDOXpn1+H+tmFprx/+J/U0KcNsB321fErbCb/6stc5rB6QsvhZeRVCA6gF2QMj77xUYFdADxkmgCWqCIwg5BZwCGTHYMegY7BWQA+SAfiUWhAQhQahDUUlQEpQEI4iwKCwKi8LuAi5DboOuw3gAIAKIACKIECSGCYKiqDAsDovD4rA4L0CMMEPUGDdIjpKj5Cg5WuY04R8VRoVRYVQYFUaFUWFUGBVGhVFhVBgVRoVRYVQYFUaFUWFUGBVOoMFmhswMmRkyM2RmyMyQmSEzQ+wwO8wOs8PsMDvMDrPD7DA7zA6zw+wwO8wOs8PsMDvMDrPD7DA7HFQBWBwWh8VhcVgcFofFYXFYHBaHxWFxWBwWh8VhcVg8qQ+8fno7iIY9lhr/9fkTHglwH+ZV9E8AAAAASUVORK5CYII=",
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 0,
+    "sprite": {
+      "width": 64,
+      "height": 128
+    }
+  }, {
+    "x": 64,
+    "y": 352,
+    "color": "#CB8",
+    "width": 96,
+    "height": 16,
+    "solid": true,
+    "age": 27464,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "class": "Moogle",
+    "x": 103,
+    "y": 328,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "excludedModules": ["Movable"],
+    "age": 61625,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 32,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 0,
+    "y": 104,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 46171,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 32,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 128,
+    "y": 416,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 26628,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "x": 96,
+    "y": 224,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 25518,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 112,
+    "y": 256,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 23672,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 100,
+    "intensity": 1,
+    "shadows": true,
+    "cacheStatic": true
+  }, {
+    "x": 448,
+    "y": 416,
+    "color": "#CB8",
+    "width": 128,
+    "height": 32,
+    "solid": true,
+    "age": 21934,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 544,
+    "y": 256,
+    "color": "#CB8",
+    "width": 64,
+    "height": 16,
+    "solid": true,
+    "age": 21807,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 256,
+    "y": 352,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "age": 15367,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 1,
+    "radius": 200,
+    "shadows": true,
+    "cacheStatic": true
+  }
+];;
+var level4;
+level4 = [
+  {
+    "x": 128,
+    "y": 340,
+    "color": "#D00",
+    "width": 160,
+    "height": 8,
+    "solid": true,
+    "age": 53735,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 72,
+    "y": 224,
+    "color": "#D00",
+    "width": 340,
+    "height": 8,
+    "solid": true,
+    "age": 51951,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "class": "Moogle",
+    "x": 328,
+    "y": 392,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "excludedModules": ["Movable"],
+    "age": 53877,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 100,
+    "y": 72,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 38424,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 0,
+    "y": 472,
+    "color": "#D00",
+    "width": 640,
+    "height": 8,
+    "solid": true,
+    "age": 26346,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 64,
+    "y": 96,
+    "color": "#D00",
+    "width": 8,
+    "height": 328,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 512,
+    "y": 96,
+    "color": "#D00",
+    "width": 8,
+    "height": 280,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 72,
+    "y": 96,
+    "color": "#D00",
+    "width": 128,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 312,
+    "y": 96,
+    "color": "#D00",
+    "width": 200,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 356,
+    "y": 340,
+    "color": "#D00",
+    "width": 156,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 208,
+    "y": 348,
+    "color": "#D00",
+    "width": 8,
+    "height": 124,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 480,
+    "y": 266,
+    "color": "#D00",
+    "width": 32,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 176,
+    "y": 324,
+    "color": "#2A4",
+    "width": 48,
+    "height": 16,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 192,
+    "y": 308,
+    "color": "#2A4",
+    "width": 16,
+    "height": 16,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 290,
+    "y": 248,
+    "color": "#24A",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 0.75,
+    "radius": 192,
+    "cacheStatic": true,
+    "shadows": true,
+    "flicker": false
+  }, {
+    "x": 192,
+    "y": 192,
+    "color": "#2A4",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 288,
+    "y": 160,
+    "color": "#2A4",
+    "width": 64,
+    "height": 64,
+    "solid": true,
+    "opaque": true,
+    "age": 21162,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 320,
+    "y": 416,
+    "color": "#2A4",
+    "width": 32,
+    "height": 56,
+    "solid": true,
+    "opaque": true,
+    "age": 19645,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 288,
+    "y": 444,
+    "color": "#2A4",
+    "width": 32,
+    "height": 28,
+    "solid": true,
+    "opaque": true,
+    "age": 19645,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 608,
+    "y": 216,
+    "color": "#CB8",
+    "width": 32,
+    "height": 256,
+    "solid": true,
+    "opaque": true,
+    "age": 19645,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 576,
+    "y": 352,
+    "color": "#CB8",
+    "width": 32,
+    "height": 120,
+    "solid": true,
+    "opaque": true,
+    "age": 19645,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 96,
+    "y": 0,
+    "color": "#CB8",
+    "width": 64,
+    "height": 128,
+    "solid": false,
+    "opaque": false,
+    "age": 15108,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "cacheStatic": true,
+    "intensity": 1,
+    "radius": 512,
+    "shadows": true,
+    "flicker": false
+  }, {
+    "x": 150,
+    "y": 346,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 14877,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 0.75,
+    "radius": 128,
+    "cacheStatic": true,
+    "shadows": true,
+    "flicker": true
+  }, {
+    "x": 128,
+    "y": 108,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 14877,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 128,
+    "cacheStatic": true,
+    "intensity": 0.75,
+    "shadows": true,
+    "flicker": false
+  }, {
+    "x": 128,
+    "y": 440,
+    "color": "#2A4",
+    "width": 80,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 11108,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 528,
+    "y": 108,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 7670,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 400,
+    "intensity": 0.66,
+    "cacheStatic": true,
+    "shadows": true,
+    "flicker": false
+  }, {
+    "x": 500,
+    "y": 96,
+    "color": "#D00",
+    "width": 48,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 7670,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 544,
+    "y": 96,
+    "color": "#D00",
+    "width": 8,
+    "height": 22,
+    "solid": true,
+    "opaque": true,
+    "age": 7670,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 432,
+    "y": 352,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 1788,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 0.75,
+    "radius": 128,
+    "cacheStatic": true,
+    "shadows": true,
+    "flicker": false
+  }
+];;
+var level5;
+level5 = [
+  {
+    "x": 384,
+    "y": 340,
+    "color": "#CB8",
+    "width": 208,
+    "height": 8,
+    "solid": true,
+    "age": 41984,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": 1
+  }, {
+    "x": 320,
+    "y": 0,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 41459,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 1024,
+    "intensity": 1,
+    "shadows": true,
+    "cacheStatic": true,
+    "flicker": false
+  }, {
+    "x": 320,
+    "y": 224,
+    "color": "#CB8",
+    "width": 32,
+    "height": 64,
+    "solid": true,
+    "age": 40200,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "opaque": true
+  }, {
+    "x": 608,
+    "y": 64,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 18709,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 1,
+    "radius": 500,
+    "shadows": true,
+    "cacheStatic": true,
+    "flicker": false
+  }, {
+    "class": "Moogle",
+    "x": 366,
+    "y": 448,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "excludedModules": ["Movable"],
+    "age": 42126,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 86,
+    "y": 316,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 26673,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 0,
+    "y": 472,
+    "color": "#CB8",
+    "width": 640,
+    "height": 8,
+    "solid": true,
+    "age": 14595,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 32,
+    "y": 340,
+    "color": "#CB8",
+    "width": 240,
+    "height": 8,
+    "solid": true,
+    "opaque": true,
+    "age": 8211,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 64,
+    "y": 96,
+    "color": "rgba(88, 196, 240, 0.5)",
+    "width": 128,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6302,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 416,
+    "y": 72,
+    "color": "rgba(88, 196, 240, 0.5)",
+    "width": 128,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6302,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 0,
+    "y": 32,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "opaque": false,
+    "age": 5403,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "cacheStatic": true,
+    "intensity": 1,
+    "radius": 500,
+    "shadows": true,
+    "flicker": false
+  }, {
+    "x": 152,
+    "y": 308,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 3966,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 480,
+    "y": 160,
+    "color": "rgba(88, 196, 240, 0.5)",
+    "width": 128,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 3966,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 224,
+    "y": 180,
+    "color": "rgba(88, 196, 240, 0.5)",
+    "width": 72,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 3966,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 128,
+    "y": 440,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 480,
+    "y": 440,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 416,
+    "y": 308,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 192,
+    "y": 348,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 544,
+    "y": 348,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 128,
+    "y": 352,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": false,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 128,
+    "intensity": 0.75,
+    "flicker": true,
+    "cacheStatic": true,
+    "shadows": true
+  }, {
+    "x": 512,
+    "y": 352,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": false,
+    "age": 621,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "flicker": true,
+    "radius": 128,
+    "intensity": 0.75,
+    "cacheStatic": true,
+    "shadows": true
+  }, {
+    "x": 272,
+    "y": 440,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": true,
+    "opaque": true,
+    "age": 477,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }
+];;
+var level6;
+level6 = [
+  {
+    "x": 128,
+    "y": 0,
+    "color": "transparent",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 39905,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "radius": 500,
+    "intensity": 1,
+    "shadows": true,
+    "cacheStatic": true,
+    "flicker": false
+  }, {
+    "x": 600,
+    "y": 0,
+    "color": "#CB8",
+    "width": 32,
+    "height": 32,
+    "solid": false,
+    "age": 17155,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Light",
+    "intensity": 1,
+    "radius": 1024,
+    "shadows": true,
+    "cacheStatic": true,
+    "flicker": false
+  }, {
+    "class": "Moogle",
+    "x": 272,
+    "y": 448,
+    "color": "#00F",
+    "speed": 6,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "solid": true,
+    "width": 16,
+    "height": 24,
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "excludedModules": ["Movable"],
+    "age": 40572,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "opaque": 1,
+    "controller": 0,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 550,
+    "y": 168,
+    "color": "#F00",
+    "width": 16,
+    "height": 24,
+    "solid": true,
+    "age": 25119,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": ["Movable"],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    },
+    "class": "Moogle",
+    "controller": 1,
+    "opaque": true,
+    "speed": 6,
+    "cooldown": 0,
+    "destructable": true,
+    "shielding": false,
+    "sprite": null,
+    "radius": 0,
+    "disabled": 0,
+    "shieldStrength": 64,
+    "score": 0,
+    "mobile": true
+  }, {
+    "x": 0,
+    "y": 472,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 640,
+    "height": 8,
+    "solid": true,
+    "age": 13041,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 0,
+    "y": 96,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 196,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 7928,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 444,
+    "y": 96,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 196,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 7928,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 448,
+    "y": 192,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 8,
+    "height": 240,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 192,
+    "y": 192,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 8,
+    "height": 240,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 64,
+    "y": 192,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 160,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 416,
+    "y": 192,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 160,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 0,
+    "y": 288,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 96,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 96,
+    "y": 384,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 64,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 544,
+    "y": 288,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 96,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }, {
+    "x": 480,
+    "y": 388,
+    "color": "rgba(80, 64, 240, 0.25)",
+    "width": 64,
+    "height": 8,
+    "solid": true,
+    "opaque": false,
+    "age": 6667,
+    "active": true,
+    "created": true,
+    "destroyed": false,
+    "includedModules": [],
+    "excludedModules": [],
+    "spriteName": null,
+    "duration": -1,
+    "acceleration": {
+      "x": 0,
+      "y": 0
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0
+    }
+  }
+];;
 var Light;
 Light = function(I) {
-  var corners, farthestCorners, fillShape, lineTo, self, shadowCanvas;
+  var cacheBuilt, cachedShadowCanvas, corners, drawLightSource, drawObjectShadows, farthestCorners, flickerState, lineTo, self, setCanvasToRemove;
   I || (I = {});
   $.reverseMerge(I, {
-    color: "orange"
+    cacheStatic: false,
+    intensity: 1,
+    color: "orange",
+    radius: 500,
+    shadows: true,
+    flicker: false
   });
-  shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas();
+  flickerState = "on";
+  if (I.shadows) {
+    I.cacheStatic = true;
+  }
+  if (I.cacheStatic) {
+    cacheBuilt = false;
+    cachedShadowCanvas = $("<canvas width=640 height=480 />").powerCanvas();
+  }
   lineTo = function(canvas, dest, color) {
     canvas.strokeColor(color || "black");
     return canvas.drawLine(I.x, I.y, dest.x, dest.y, 1);
-  };
-  fillShape = function(context, p1, p2, p3, p4) {
-    context.fillColor = "#000";
-    context.beginPath();
-    context.moveTo(p1.x, p1.y);
-    context.lineTo(p2.x, p2.y);
-    context.lineTo(p3.x, p3.y);
-    context.lineTo(p4.x, p4.y);
-    context.lineTo(p1.x, p1.y);
-    return context.fill();
   };
   corners = function(object) {
     return (function(I) {
@@ -3748,123 +6821,364 @@ Light = function(I) {
       return [min, max];
     })(object.I);
   };
+  drawLightSource = function(canvas) {
+    var context, radgrad;
+    context = canvas.context();
+    context.globalAlpha = I.intensity;
+    radgrad = Light.radialGradient(I, context, true);
+    return canvas.fillCircle(I.x, I.y, I.radius, radgrad);
+  };
+  setCanvasToRemove = function(canvas) {
+    return canvas.globalAlpha(1).compositeOperation("destination-out").fillColor("#000");
+  };
+  drawObjectShadows = function(object, canvas) {
+    var farCorners, veryFar;
+    farCorners = farthestCorners(object, canvas);
+    veryFar = [farCorners[0].subtract(I).norm().scale(1000).add(farCorners[0]), farCorners[1].subtract(I).norm().scale(1000).add(farCorners[1])];
+    return canvas.fillShape(veryFar[0], farCorners[0], farCorners[1], veryFar[1]);
+  };
   return (self = GameObject(I).extend({
+    draw: function(canvas) {},
     illuminate: function(canvas) {
-      var shadowContext, shadows;
-      shadowCanvas.clear();
-      shadowContext = shadowCanvas.context();
-      canvas.fillCircle(I.x, I.y, 10, I.color);
-      engine.eachObject(function(object) {
-        var farCorners, veryFar;
-        if (object.I.opaque) {
-          corners(object).each(function(corner) {});
-          farCorners = farthestCorners(object, canvas);
-          veryFar = [farCorners[0].subtract(I).norm().scale(1000), farCorners[1].subtract(I).norm().scale(1000)];
-          return fillShape(shadowContext, veryFar[0], farCorners[0], farCorners[1], veryFar[1]);
+      var cached, mobileCanvas, r, shadows, staticCanvas;
+      if (I.flicker) {
+        r = rand();
+        if (r < 0.05) {
+          flickerState = "off";
+        } else if (r < 0.10) {
+          flickerState = "on";
         }
-      });
-      shadows = shadowCanvas.element();
-      return canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height);
+        if (flickerState === "off") {
+          return null;
+        }
+      }
+      if (I.shadows) {
+        if (I.cacheStatic) {
+          if (cacheBuilt) {
+            staticCanvas = null;
+            mobileCanvas = Light.shadowCanvas();
+            mobileCanvas.globalAlpha(1).compositeOperation("source-over");
+            cached = cachedShadowCanvas.element();
+            mobileCanvas.drawImage(cached, 0, 0, cached.width, cached.height, 0, 0, cached.width, cached.height);
+          } else {
+            staticCanvas = cachedShadowCanvas;
+            staticCanvas.globalAlpha(1).compositeOperation("source-over");
+            drawLightSource(staticCanvas);
+            mobileCanvas = Light.shadowCanvas();
+            cached = cachedShadowCanvas.element();
+            mobileCanvas.drawImage(cached, 0, 0, cached.width, cached.height, 0, 0, cached.width, cached.height);
+          }
+        } else {
+          mobileCanvas = (staticCanvas = Light.shadowCanvas());
+          mobileCanvas.globalAlpha(1).compositeOperation("source-over");
+          drawLightSource(mobileCanvas);
+        }
+        setCanvasToRemove(mobileCanvas);
+        if (staticCanvas) {
+          setCanvasToRemove(staticCanvas);
+        }
+        engine.eachObject(function(object) {
+          if (object.I.opaque) {
+            if (cacheBuilt) {
+              return object.I.mobile ? drawObjectShadows(object, mobileCanvas) : null;
+            } else {
+              if (object.I.mobile) {
+                return drawObjectShadows(object, mobileCanvas);
+              } else {
+                if (I.cacheStatic) {
+                  return drawObjectShadows(object, staticCanvas);
+                }
+              }
+            }
+          }
+        });
+        if (I.cacheStatic) {
+          cacheBuilt = true;
+        }
+        shadows = mobileCanvas.element();
+        return canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height);
+      } else {
+        return drawLightSource(canvas);
+      }
     }
   }));
+};
+(function() {
+  var canvas;
+  canvas = $("<canvas width=640 height=480 />").powerCanvas();
+  return (Light.shadowCanvas = function() {
+    canvas.clear();
+    return canvas;
+  });
+})();
+Light.radialGradient = function(c, context, quadratic) {
+  var radgrad;
+  /**
+    c1 = x: c.x, y: c.y, radius: 0
+    c2 = x: c.x, y: c.y, radius: c.radius
+
+    stops =
+      0: "#000"
+      1: "rgba(0, 0, 0, 0)"
+
+    if quadratic
+      $.extend stops,
+        "0.25": "rgba(0, 0, 0, 0.5625)"
+        "0.5": "rgba(0, 0, 0, 0.25)"
+        "0.75": "rgba(0, 0, 0, 0.0625)"
+
+    canvas.buildRadialGradient(c1, c2, stops)
+  */
+  radgrad = context.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.radius);
+  radgrad.addColorStop(0, "#000");
+  if (quadratic) {
+    radgrad.addColorStop(0.25, "rgba(0, 0, 0, 0.5625)");
+    radgrad.addColorStop(0.5, "rgba(0, 0, 0, 0.25)");
+    radgrad.addColorStop(0.75, "rgba(0, 0, 0, 0.0625)");
+  }
+  radgrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  return radgrad;
 };;
 var Moogle;
 Moogle = function(I) {
-  var GRAVITY, PHYSICS, falling, jumping, laserColors, laserEndpoint, lastDirection, particleSizes, physics, self, shooting;
+  var GRAVITY, INVULNERABILITY_DURATION, MAX_SHIELD, PHYSICS, PLAYER_COLORS, SCREEN_WIDTH, actionDown, beams, drawHud, falling, fireBeam, jumping, laserParticleEffects, lastDirection, particleSizes, physics, self, shieldGradient, shooting;
   I || (I = {});
   GRAVITY = Point(0, 2);
+  SCREEN_WIDTH = 640;
+  MAX_SHIELD = 64;
+  INVULNERABILITY_DURATION = 32;
+  PLAYER_COLORS = ["#00F", "#F00", "#0F0", "#FF0", "orange", "#F0F", "#0FF"];
   $.reverseMerge(I, {
-    color: "blue",
-    speed: 6,
     acceleration: Point(0, 0),
-    solid: false,
-    width: 16,
-    height: 16,
+    controller: 0,
+    cooldown: 0,
+    destructable: true,
+    disabled: 0,
+    excludedModules: ["Movable"],
+    height: 24,
+    invulnerable: INVULNERABILITY_DURATION,
+    mobile: true,
+    opaque: true,
+    score: 0,
+    shielding: false,
+    shieldStrength: MAX_SHIELD,
+    speed: 6,
+    solid: true,
     velocity: Point(0, 0),
-    excludedModules: ["Movable"]
+    width: 16
   });
   I.acceleration = Point(I.acceleration.x, I.acceleration.y);
   I.velocity = Point(I.velocity.x, I.velocity.y);
+  I.sprite = null;
+  I.color = PLAYER_COLORS[I.controller];
+  actionDown = CONTROLLERS[I.controller].actionDown;
   jumping = false;
   falling = true;
   lastDirection = 1;
   shooting = false;
-  laserEndpoint = null;
   PHYSICS = {
     platform: function() {
+      I.shielding = false;
+      shooting = false;
       if (jumping) {
         I.velocity.y += GRAVITY.scale(0.5).y;
       } else if (falling) {
         I.velocity.y += GRAVITY.y;
       } else {
-        if (keydown.up) {
+        if (actionDown("A")) {
           jumping = true;
           I.velocity.y = -7 * GRAVITY.y - 2;
+        } else if (actionDown("C")) {
+          if (I.shieldStrength > 0) {
+            I.shielding = true;
+            I.shieldStrength -= 1;
+          } else {
+            I.disabled = 96;
+          }
         }
       }
-      if (keydown.right) {
-        I.velocity.x += 2;
+      if (!(I.shielding || I.disabled)) {
+        I.shieldStrength = I.shieldStrength.approach(MAX_SHIELD, 0.25);
+        if (actionDown("right")) {
+          I.velocity.x += 2;
+          lastDirection = 1;
+        }
+        if (actionDown("left")) {
+          I.velocity.x -= 2;
+          lastDirection = -1;
+        }
+        if (!(actionDown("A"))) {
+          jumping = false;
+        }
+        shooting = actionDown("B");
+        /**
+          if actionDown "up"
+            shooting = true
+          if actionDown "down"
+            shooting = true
+        */
       }
-      if (keydown.left) {
-        I.velocity.x -= 2;
-      }
-      if (!(keydown.left || keydown.right)) {
-        I.velocity.x = 0;
-      }
-      if (!(keydown.up)) {
-        jumping = false;
-      }
-      shooting = keydown.space;
-      if (I.velocity.x.sign()) {
-        lastDirection = I.velocity.x.sign();
+      if (I.shielding || !(actionDown("left") || actionDown("right"))) {
+        I.velocity.x = I.velocity.x.approach(0, 2);
       }
       return (I.velocity.x = I.velocity.x.clamp(-8, 8));
-    },
-    arena: function() {
-      I.velocity.y = I.velocity.y.approach(0, 1);
-      I.velocity.x = I.velocity.x.approach(0, 1);
-      if (Game.keydown("right")) {
-        I.velocity.x += 2;
-      }
-      if (Game.keydown("left")) {
-        I.velocity.x -= 2;
-      }
-      if (Game.keydown("up")) {
-        I.velocity.y -= 2;
-      }
-      if (Game.keydown("down")) {
-        I.velocity.y += 2;
-      }
-      I.velocity.y = I.velocity.y.clamp(-I.speed, I.speed);
-      return (I.velocity.x = I.velocity.x.clamp(-I.speed, I.speed));
     }
   };
   physics = PHYSICS.platform;
-  laserColors = ["rgba(255, 0, 128, 0.75)", "rgba(255, 0, 128, 0.75)", "rgba(255, 0, 128, 0.75)", "rgba(255, 255, 255, 0.25)", "rgba(32, 190, 230, 0.25)"];
   particleSizes = [2, 8, 4, 6];
+  drawHud = function(canvas) {
+    var hudHeight, hudMargin, hudWidth, screenPadding;
+    screenPadding = 5;
+    hudWidth = 80;
+    hudHeight = 40;
+    hudMargin = 10;
+    return canvas.withTransform(Matrix.translation(I.controller * (hudWidth + hudMargin) + screenPadding, 0), function(canvas) {
+      var color;
+      canvas.clearRect(0, 0, hudWidth, hudHeight);
+      color = Color(I.color);
+      color.a(0.5);
+      canvas.fillColor(color);
+      canvas.fillRoundRect(0, -5, hudWidth, hudHeight);
+      canvas.fillColor("#FFF");
+      canvas.fillText("PLAYER " + (I.controller + 1), 5, 12);
+      return canvas.fillText("SCORE: " + (I.score), 5, 28);
+    });
+  };
+  laserParticleEffects = function(target) {
+    engine.add({
+      "class": "Emitter",
+      duration: 10,
+      sprite: Sprite.EMPTY,
+      velocity: Point(0, 0),
+      particleCount: 9,
+      batchSize: 5,
+      x: target.x,
+      y: target.y,
+      generator: {
+        color: Color(255, 0, 0, 0.5),
+        duration: 3,
+        height: function(n) {
+          return particleSizes.wrap(n);
+        },
+        maxSpeed: 5,
+        velocity: function(n) {
+          return Point.fromAngle(Random.angle()).scale(rand(5) + 1);
+        },
+        width: function(n) {
+          return particleSizes.wrap(n);
+        }
+      }
+    });
+    return engine.add({
+      "class": "Light",
+      radius: 50,
+      x: target.x,
+      y: target.y,
+      duration: 3,
+      shadows: false,
+      step: "I.radius = I.radius / 2"
+    });
+  };
+  beams = [];
+  fireBeam = function(sourcePoint, direction, sourceObject) {
+    var endPoint, hitObject, nearestHit;
+    if (nearestHit = engine.rayCollides(sourcePoint, direction, sourceObject)) {
+      endPoint = nearestHit;
+      hitObject = nearestHit.object;
+    }
+    if (endPoint) {
+      laserParticleEffects(endPoint);
+    } else {
+      endPoint = direction.norm().scale(1000).add(sourcePoint);
+    }
+    beams.push([sourcePoint, endPoint]);
+    if ((typeof hitObject === "undefined" || hitObject === null) ? undefined : hitObject.I) {
+      if (hitObject.I.shielding || hitObject.I.invulnerable) {
+        fireBeam(endPoint, Point.fromAngle(Random.angle()), hitObject);
+        return hitObject.I.shieldStrength -= 5;
+      } else if (hitObject.I.destructable) {
+        if (hitObject === self) {
+          I.score -= 1;
+        } else if (hitObject.I["class"] === I["class"]) {
+          I.score += 1;
+        }
+        return hitObject.destroy();
+      }
+    }
+  };
+  shieldGradient = function(strength, context) {
+    var a, edgeAlpha, radgrad;
+    radgrad = context.createRadialGradient(4, -4, 0, 0, 0, 16);
+    a = 0.75 * strength / MAX_SHIELD;
+    edgeAlpha = 0.75 + 0.25 * strength / MAX_SHIELD;
+    radgrad.addColorStop(0, "rgba(255, 255, 255, " + (a) + ")");
+    radgrad.addColorStop(0.25, "rgba(0, 255, 0, " + (a) + ")");
+    radgrad.addColorStop(0.9, "rgba(0, 255, 0, " + (a) + ")");
+    radgrad.addColorStop(1, "rgba(0, 200, 0, " + (edgeAlpha) + ")");
+    return radgrad;
+  };
   self = GameObject(I).extend({
+    illuminate: function(canvas) {
+      var center;
+      center = self.centeredBounds();
+      if (I.invulnerable) {
+        center.radius = Math.sin(I.age * Math.TAU / 36) * 16 + 24;
+      } else if (I.disabled) {
+        center.radius = rand(16) + 16;
+      } else {
+        center.radius = 32;
+      }
+      if (I.shielding || I.disabled || I.invulnerable) {
+        canvas.fillCircle(center.x, center.y, center.radius, Light.radialGradient(center, canvas.context()));
+      }
+      return beams.each(function(beam) {
+        canvas.strokeColor("#000");
+        return canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2.25);
+      });
+    },
+    after: {
+      draw: function(canvas, hud) {
+        var center;
+        center = self.centeredBounds();
+        if (I.shielding) {
+          canvas.withTransform(Matrix.translation(center.x, center.y), function(canvas) {
+            return canvas.fillCircle(0, 0, 16, shieldGradient(I.shieldStrength, canvas.context()));
+          });
+        }
+        beams.each(function(beam) {
+          canvas.strokeColor(I.color);
+          return canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2);
+        });
+        return drawHud(hud);
+      }
+    },
     before: {
-      draw: function(canvas) {
-        var laserStart;
-        laserStart = self.centeredBounds();
-        return laserEndpoint ? (5).times(function() {
-          canvas.strokeColor(laserColors.rand());
-          return canvas.drawLine(laserStart.x, laserStart.y, laserEndpoint.x, laserEndpoint.y, 2);
-        }) : null;
-      },
       update: function() {
-        var nearestHit, object, shootDirection;
-        if (engine.collides(self.bounds(0, 1))) {
+        var center, shootDirection, shootX, shootY;
+        beams = [];
+        if (I.cooldown > 0) {
+          I.cooldown -= 1;
+        }
+        if (I.disabled > 0) {
+          I.disabled -= 1;
+        }
+        if (I.invulnerable > 0) {
+          I.invulnerable -= 1;
+        }
+        if (I.disabled) {
+          I.velocity = I.velocity.add(Point.fromAngle(Random.angle()).scale(rand(4)));
+        }
+        if (engine.collides(self.bounds(0, 1), self)) {
           falling = false;
         } else {
           falling = true;
         }
         physics();
         I.velocity.x.abs().times(function() {
-          return !engine.collides(self.bounds(I.velocity.x.sign(), 0)) ? I.x += I.velocity.x.sign() : (I.velocity.x = 0);
+          return !engine.collides(self.bounds(I.velocity.x.sign(), 0), self) ? I.x += I.velocity.x.sign() : (I.velocity.x = 0);
         });
         I.velocity.y.abs().times(function() {
-          if (!engine.collides(self.bounds(0, I.velocity.y.sign()))) {
+          if (!engine.collides(self.bounds(0, I.velocity.y.sign()), self)) {
             return I.y += I.velocity.y.sign();
           } else {
             I.velocity.y = 0;
@@ -3874,93 +7188,123 @@ Moogle = function(I) {
         if (Mouse.left) {
           shootDirection = Mouse.location.subtract(I);
         } else if (shooting) {
-          shootDirection = Point(lastDirection, 0);
-        }
-        laserEndpoint = null;
-        if (shootDirection) {
-          if (nearestHit = engine.rayCollides(self.centeredBounds(), shootDirection)) {
-            laserEndpoint = nearestHit;
-            object = nearestHit.object;
+          shootX = 0;
+          shootY = 0;
+          if (actionDown("left")) {
+            shootX += -1;
           }
-          if (laserEndpoint) {
-            engine.add({
-              "class": "Emitter",
-              duration: 10,
-              sprite: Sprite.EMPTY,
-              velocity: Point(0, 0),
-              particleCount: 2,
-              batchSize: 5,
-              x: laserEndpoint.x,
-              y: laserEndpoint.y,
-              generator: {
-                color: Color(255, 0, 0, 0.5),
-                duration: 3,
-                height: function(n) {
-                  return particleSizes.wrap(n);
-                },
-                maxSpeed: 5,
-                velocity: function(n) {
-                  return Point.fromAngle(Random.angle()).scale(rand(5) + 1);
-                },
-                width: function(n) {
-                  return particleSizes.wrap(n);
-                }
-              }
-            });
+          if (actionDown("right")) {
+            shootX += 1;
+          }
+          if (actionDown("up")) {
+            shootY += -1;
+          }
+          if (actionDown("down")) {
+            shootY += 1;
+          }
+          if (shootY === 0 && shootX === 0) {
+            shootDirection = Point(lastDirection, 0);
           } else {
-            laserEndpoint = shootDirection.norm().scale(1000).add(I);
+            shootDirection = Point(shootX, shootY);
           }
         }
-        if ((typeof object === "undefined" || object === null) ? undefined : object.I.destructable) {
-          object.I.active = false;
+        if (shootDirection && (I.cooldown === 0)) {
+          I.cooldown += 15;
+          Sound.play("laser");
+          I.velocity = I.velocity.add(shootDirection.norm().scale(-8));
+          engine.add({
+            "class": "Light",
+            intensity: 0.75,
+            radius: 100,
+            x: I.x + I.width / 2 + I.velocity.x,
+            y: I.y + I.height / 2 + I.velocity.y,
+            duration: 6,
+            shadows: false,
+            step: "I.radius = I.radius / 4"
+          });
+          center = self.centeredBounds();
+          fireBeam(center, shootDirection, self);
+        }
+        if ((I.disabled % 4) === 3) {
           engine.add({
             "class": "Emitter",
-            duration: 10,
+            duration: 5,
             sprite: Sprite.EMPTY,
             velocity: Point(0, 0),
-            particleCount: 15,
+            particleCount: 9,
             batchSize: 5,
-            x: object.I.width / 2 + object.I.x,
-            y: object.I.height / 2 + object.I.y,
+            x: I.x,
+            y: I.y,
             generator: {
-              color: "rgba(200, 140, 235, 0.7)",
+              color: I.color,
               duration: 15,
               height: function(n) {
-                return particleSizes.wrap(n) * 3;
+                return particleSizes.rand();
               },
-              maxSpeed: 35,
+              maxSpeed: 5,
               velocity: function(n) {
-                return Point.fromAngle(Random.angle()).scale(rand(5) + 5);
+                return Point.fromAngle(Random.angle()).scale(rand(3) + 2);
               },
               width: function(n) {
-                return particleSizes.wrap(n) * 3;
+                return particleSizes.rand();
               }
             }
           });
         }
-        return engine.eachObject(function(object) {
-          if (object.I.open && Collision.rectangular(I, object.bounds())) {
-            if (I.active) {
-              I.active = false;
-              return engine.queue(nextLevel);
-            }
-          }
-        });
+        return (I.x = I.x.clamp(0, SCREEN_WIDTH - I.width));
       }
     }
+  });
+  self.bind('destroy', function() {
+    Sound.play("hit");
+    engine.add({
+      "class": "Emitter",
+      duration: 10,
+      sprite: Sprite.EMPTY,
+      velocity: Point(0, 0),
+      particleCount: 15,
+      batchSize: 5,
+      x: I.width / 2 + I.x,
+      y: I.height / 2 + I.y,
+      generator: {
+        color: "rgba(200, 140, 235, 0.7)",
+        duration: 3,
+        height: function(n) {
+          return particleSizes.wrap(n) * 3;
+        },
+        maxSpeed: 35,
+        velocity: function(n) {
+          return Point.fromAngle(Random.angle()).scale(rand(5) + 5);
+        },
+        width: function(n) {
+          return particleSizes.wrap(n) * 3;
+        }
+      }
+    });
+    engine.add($.extend({}, I, {
+      x: [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608].rand(),
+      y: [0, -2 * I.height, -4 * I.height, -6 * I.height, -8 * I.height, -10 * I.height].rand(),
+      disabled: 0,
+      invulnerable: INVULNERABILITY_DURATION,
+      shieldStrength: MAX_SHIELD
+    }));
+    return (I.active = false);
   });
   return self;
 };;
 ;
-;$(function(){ var block, developer, level, objectToUpdate;
+;$(function(){ var PLAY_TO, block, developer, levels, objectToUpdate;
+var __hasProp = Object.prototype.hasOwnProperty;
 window.engine = Engine({
+  ambientLight: 0.05,
   canvas: $("canvas").powerCanvas()
 });
 block = {
   color: "#CB8",
   width: 32,
   height: 32,
-  solid: true
+  solid: true,
+  opaque: true
 };
 (20).times(function(i) {
   return engine.add($.extend({
@@ -3973,10 +7317,58 @@ engine.add({
   x: 320,
   y: 240
 });
-if (level = Local.get("level")) {
-  engine.loadState(level);
-}
+levels = [level3, level4, level5, level6];
+engine.loadState(levels.rand());
+PLAY_TO = 50;
 engine.start();
+engine.bind("update", function() {
+  var _ref, highestScore, id, info, playerInfo, winningPlayers;
+  playerInfo = {};
+  engine.eachObject(function(o) {
+    var _ref;
+    return (typeof (_ref = o.I.controller) !== "undefined" && _ref !== null) ? (playerInfo[o.I.controller] = o.I) : null;
+  });
+  highestScore = 0;
+  winningPlayers = [];
+  _ref = playerInfo;
+  for (id in _ref) {
+    if (!__hasProp.call(_ref, id)) continue;
+    info = _ref[id];
+    id = parseInt(id, 10);
+    if (info.score > highestScore) {
+      highestScore = info.score;
+      winningPlayers = [id];
+    } else if (playerInfo.score === highestScore) {
+      winningPlayers.push[id];
+    }
+  }
+  if (highestScore >= PLAY_TO) {
+    if (winningPlayers.length === 1) {
+      alert("Player " + (winningPlayers[0] + 1) + " Wins!");
+    } else {
+      alert("Tie Between Players " + (winningPlayers.map(function(n) {
+        return n + 1;
+      }).join(', ')));
+    }
+    engine.loadState(levels.rand());
+    return null;
+  }
+  CONTROLLERS.each(function(controller, i) {
+    var exists;
+    if (controller.actionDown("D")) {
+      exists = playerInfo[i];
+      return !(exists) ? engine.add({
+        "class": "Moogle",
+        controller: i,
+        x: [64, 256, 320, 512].rand(),
+        y: -16
+      }) : null;
+    }
+  });
+  return engine.eachObject(function(o) {
+    return o.I.camera ? engine.cameraTransform(o.cameraTransform()) : null;
+  });
+});
 developer = false;
 objectToUpdate = null;
 window.updateObjectProperties = function(newProperties) {
