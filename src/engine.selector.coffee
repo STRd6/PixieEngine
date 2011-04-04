@@ -12,6 +12,11 @@ EngineSelector =
       result.splice(1)
     else
       []
+      
+  instanceMethods:
+    set: (attr, value) ->
+      this.each (item) ->
+        item.I[attr] = value
 
   generate: (selector) ->
     components = EngineSelector.parse(selector).map (piece) ->

@@ -119,7 +119,7 @@
         objects.each (object) ->
           results.push object if matcher.match object
 
-        results
+        $.extend results, EngineSelector.instanceMethods
 
       collides: (bounds, sourceObject) ->
         objects.inject false, (collided, object) ->
