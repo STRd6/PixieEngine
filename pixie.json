@@ -8,6 +8,8 @@
     "lib": "lib",
     "source": "src",
     "test": "test"
-  }
+  },
+  "width": 640,
+  "height": 480
 }
 
