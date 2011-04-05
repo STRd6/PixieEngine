@@ -31,6 +31,20 @@
       queuedObjects = []
       
       self.trigger "update"
+      
+    drawDeveloperOverlay = (canvas) ->
+      #TODO: Move this into the debug draw method of the objects themselves
+      canvas.withTransform I.cameraTransform, (canvas) ->
+        objects.each (object) ->
+          canvas.fillColor 'rgba(255, 0, 0, 0.5)'
+          canvas.fillRect(object.bounds().x, object.bounds().y, object.bounds().width, object.bounds().height)
+          
+      canvas.fillColor 'rgba(0, 0, 0, 0.5)'
+      canvas.fillRect(430, 10, 200, 60)
+      canvas.fillColor '#fff'
+      canvas.fillText("Developer Mode. Press Esc to resume", 440, 25)
+      canvas.fillText("Left click to add boxes", 440, 43)
+      canvas.fillText("Right click red boxes to edit properties", 440, 60)
 
     draw = ->
       if I.ambientLight < 1
@@ -53,13 +67,15 @@
           canvas.fill(I.backgroundColor)
 
         objects.invoke("draw", canvas, hudCanvas)
-
+           
       if I.ambientLight < 1
         shadows = shadowCanvas.element()
-        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)      
+        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
 
       hud = hudCanvas.element()
       canvas.drawImage hud, 0, 0, hud.width, hud.height, 0, 0, hud.width, hud.height
+
+      drawDeveloperOverlay(canvas) if paused
 
     step = ->
       unless paused
