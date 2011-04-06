@@ -7,6 +7,7 @@
     excludedModules: []
     includedModules: []
     objects: []
+    paused: false
 
   window.Engine = (I) ->
     I ||= {}
@@ -15,7 +16,6 @@
 
     intervalId = null
     age = 0
-    paused = false
 
     queuedObjects = []
   
@@ -27,20 +27,6 @@
       queuedObjects = []
       
       self.trigger "update"
-      
-    drawDeveloperOverlay = (canvas) ->
-      #TODO: Move this into the debug draw method of the objects themselves
-      canvas.withTransform I.cameraTransform, (canvas) ->
-        I.objects.each (object) ->
-          canvas.fillColor 'rgba(255, 0, 0, 0.5)'
-          canvas.fillRect(object.bounds().x, object.bounds().y, object.bounds().width, object.bounds().height)
-          
-      canvas.fillColor 'rgba(0, 0, 0, 0.5)'
-      canvas.fillRect(430, 10, 200, 60)
-      canvas.fillColor '#fff'
-      canvas.fillText("Developer Mode. Press Esc to resume", 440, 25)
-      canvas.fillText("Shift+Left click to add boxes", 440, 43)
-      canvas.fillText("Right click red boxes to edit properties", 440, 60)
 
     draw = ->
       canvas.withTransform I.cameraTransform, (canvas) ->
@@ -51,10 +37,8 @@
 
       self.trigger "draw", canvas
 
-      drawDeveloperOverlay(canvas) if paused
-
     step = ->
-      unless paused
+      unless I.paused
         update()
         age += 1
 
@@ -66,7 +50,7 @@
       add: (entityData) ->
         obj = GameObject.construct entityData
         
-        if intervalId && !paused
+        if intervalId && !I.paused
           queuedObjects.push obj
         else
           I.objects.push obj
@@ -137,13 +121,13 @@
         intervalId = null
         
       play: ->
-        paused = false
+        I.paused = false
         
       pause: ->
-        paused = true
+        I.paused = true
         
       paused: ->
-        paused
+        I.paused
         
       setFramerate: (newFPS) ->
         I.FPS = newFPS
@@ -155,7 +139,7 @@
     self.attrAccessor "cameraTransform"
     self.include Bindable
 
-    defaultModules = ["Shadows", "HUD", "SaveState"]
+    defaultModules = ["Shadows", "HUD", "Developer", "SaveState"]
     modules = defaultModules.concat(I.includedModules)
     modules = modules.without(I.excludedModules)
 
