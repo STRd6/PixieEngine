@@ -43,7 +43,7 @@
       canvas.fillRect(430, 10, 200, 60)
       canvas.fillColor '#fff'
       canvas.fillText("Developer Mode. Press Esc to resume", 440, 25)
-      canvas.fillText("Left click to add boxes", 440, 43)
+      canvas.fillText("Shift+Left click to add boxes", 440, 43)
       canvas.fillText("Right click red boxes to edit properties", 440, 60)
 
     draw = ->
