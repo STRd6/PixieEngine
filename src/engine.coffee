@@ -1,6 +1,7 @@
 ( ($) ->
   defaults =
     FPS: 33.3333
+    age: 0
     ambientLight: 1
     backgroundColor: "#FFFFFF"
     cameraTransform: Matrix.IDENTITY
@@ -15,7 +16,6 @@
     $.reverseMerge I, defaults
 
     intervalId = null
-    age = 0
 
     queuedObjects = []
   
@@ -40,7 +40,7 @@
     step = ->
       unless I.paused
         update()
-        age += 1
+        I.age += 1
 
       draw()
    
@@ -54,11 +54,7 @@
           queuedObjects.push obj
         else
           I.objects.push obj
-  
-      #TODO: This is only used in testing and should be removed when possible
-      age: ->
-        age
-  
+
       #TODO: This is a bad idea in case access is attempted during update
       objects: ->
         I.objects
