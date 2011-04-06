@@ -18,7 +18,6 @@
     $.reverseMerge I, defaults
 
     intervalId = null
-    savedState = null
     age = 0
     paused = false
 
