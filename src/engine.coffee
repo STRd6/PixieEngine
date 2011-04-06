@@ -69,23 +69,15 @@
       draw()
    
     canvas = I.canvas || $("<canvas />").powerCanvas()
-    
-    construct = (entityData) ->
-      if entityData.class
-        entityData.class.constantize()(entityData)
-      else
-        GameObject(entityData)
   
     self = Core(I).extend
       add: (entityData) ->
-        obj = construct entityData
+        obj = GameObject.construct entityData
         
         if intervalId && !paused
           queuedObjects.push obj
         else
           I.objects.push obj
-          
-      construct: construct
   
       #TODO: This is only used in testing and should be removed when possible
       age: ->
@@ -141,22 +133,6 @@
             nearestHit = hit
             
         nearestHit
-        
-      rewind: () ->
-        
-        
-      saveState: () ->
-        savedState = I.objects.map (object) ->
-          $.extend({}, object.I)
-  
-      loadState: (newState) ->
-        if newState ||= savedState
-          I.objects = newState.map (objectData) ->
-            construct $.extend({}, objectData)
-  
-      reload: () ->
-        I.objects = I.objects.map (object) ->
-          construct object.I
   
       start: () ->
         unless intervalId
@@ -187,7 +163,7 @@
     self.attrAccessor "cameraTransform"
     self.include Bindable
 
-    defaultModules = ["Shadows"]
+    defaultModules = ["Shadows", "SaveState"]
     modules = defaultModules.concat(I.includedModules)
     modules = modules.without(I.excludedModules)
 
