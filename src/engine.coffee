@@ -4,6 +4,9 @@
     ambientLight: 1
     backgroundColor: "#FFFFFF"
     cameraTransform: Matrix.IDENTITY
+    excludedModules: []
+    includedModules: []
+    objects: []
 
   hudCanvas = $("<canvas width=640 height=480 />").powerCanvas()
 
@@ -20,13 +23,12 @@
     paused = false
 
     queuedObjects = []
-    objects = []
   
     update = ->
-      objects = objects.select (object) ->
+      I.objects = I.objects.select (object) ->
         object.update()
         
-      objects = objects.concat(queuedObjects)
+      I.objects = I.objects.concat(queuedObjects)
       queuedObjects = []
       
       self.trigger "update"
@@ -34,7 +36,7 @@
     drawDeveloperOverlay = (canvas) ->
       #TODO: Move this into the debug draw method of the objects themselves
       canvas.withTransform I.cameraTransform, (canvas) ->
-        objects.each (object) ->
+        I.objects.each (object) ->
           canvas.fillColor 'rgba(255, 0, 0, 0.5)'
           canvas.fillRect(object.bounds().x, object.bounds().y, object.bounds().width, object.bounds().height)
           
@@ -50,7 +52,7 @@
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
 
-        objects.invoke("draw", canvas, hudCanvas)
+        I.objects.invoke("draw", canvas, hudCanvas)
 
       self.trigger "draw", canvas
 
@@ -81,7 +83,7 @@
         if intervalId && !paused
           queuedObjects.push obj
         else
-          objects.push obj
+          I.objects.push obj
           
       construct: construct
   
@@ -91,7 +93,7 @@
   
       #TODO: This is a bad idea in case access is attempted during update
       objects: ->
-        objects
+        I.objects
         
       objectAt: (x, y) ->
         targetObject = null
@@ -107,24 +109,24 @@
         return targetObject
         
       eachObject: (iterator) ->
-        objects.each iterator
+        I.objects.each iterator
 
       find: (selector) ->
         results = []
 
         matcher = EngineSelector.generate(selector)
 
-        objects.each (object) ->
+        I.objects.each (object) ->
           results.push object if matcher.match object
 
         $.extend results, EngineSelector.instanceMethods
 
       collides: (bounds, sourceObject) ->
-        objects.inject false, (collided, object) ->
+        I.objects.inject false, (collided, object) ->
           collided || (object.solid() && (object != sourceObject) && object.collides(bounds))
           
       rayCollides: (source, direction, sourceObject) ->
-        hits = objects.map (object) ->
+        hits = I.objects.map (object) ->
           hit = object.solid() && (object != sourceObject) && Collision.rayRectangle(source, direction, object.centeredBounds())
           hit.object = object if hit
           
@@ -144,16 +146,16 @@
         
         
       saveState: () ->
-        savedState = objects.map (object) ->
+        savedState = I.objects.map (object) ->
           $.extend({}, object.I)
   
       loadState: (newState) ->
         if newState ||= savedState
-          objects = newState.map (objectData) ->
+          I.objects = newState.map (objectData) ->
             construct $.extend({}, objectData)
   
       reload: () ->
-        objects = objects.map (object) ->
+        I.objects = I.objects.map (object) ->
           construct object.I
   
       start: () ->
@@ -184,7 +186,14 @@
     self.attrAccessor "backgroundColor"
     self.attrAccessor "cameraTransform"
     self.include Bindable
-    
+
+    defaultModules = ["Shadows"]
+    modules = defaultModules.concat(I.includedModules)
+    modules = modules.without(I.excludedModules)
+
+    modules.each (moduleName) ->
+      self.include Engine[moduleName]
+
     return self
 )(jQuery)
 
