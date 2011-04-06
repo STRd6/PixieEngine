@@ -101,20 +101,23 @@ $(document).mousedown (event) ->
         y: event.pageY.snap(32)
       , block)
 
-$(document).bind "keydown", "esc", () ->
-  developer = !developer
-
-  if developer
-    engine.pause()
-  else
-    engine.play()
-
-$(document).bind "keydown", "f3", () ->
-  Local.set("level", engine.saveState())
+hotkeys =
+  esc: ->
+    developer = !developer
   
-$(document).bind "keydown", "f4", () ->
-  engine.loadState(Local.get("level"))
-  
-$(document).bind "keydown", "f5", () ->
-  engine.reload()
+    if developer
+      engine.pause()
+    else
+      engine.play()
+  f3: ->
+    Local.set("level", engine.saveState())
+  f4: ->
+    engine.loadState(Local.get("level"))
+  f5: ->
+    engine.reload()
+
+for key, fn of hotkeys
+  $(document).bind "keydown", key, (event) ->
+    event.preventDefault()
+    fn()
 
