@@ -1,9 +1,9 @@
-EngineSelector = 
-  parse: (selector) ->
+Engine.Selector = (I, self) ->
+  parse = (selector) ->
     selector.split(",").map (result) ->
       result.trim()
 
-  process: (item) ->
+  process = (item) ->
     result = /^(\w+)?#?([\w\-]+)?\.?([\w\-]+)?=?([\w\-]+)?/.exec(item)
 
     if result
@@ -13,12 +13,12 @@ EngineSelector =
     else
       []
       
-  instanceMethods:
+  instanceMethods =
     set: (attr, value) ->
       this.each (item) ->
         item.I[attr] = value
 
-  generate: (selector) ->
+  generate = (selector) ->
     components = EngineSelector.parse(selector).map (piece) ->
       EngineSelector.process(piece)
 
@@ -43,4 +43,14 @@ EngineSelector =
         return true if idMatch && typeMatch && attrMatch
 
       return false
+
+  find: (selector) ->
+    results = []
+
+    matcher = generate(selector)
+
+    I.objects.each (object) ->
+      results.push object if matcher.match object
+
+    $.extend results, instanceMethods
 
