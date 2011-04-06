@@ -191,6 +191,8 @@ Moogle = (I) ->
     radgrad
 
   self = GameObject(I).extend
+    drawHUD: drawHud
+    
     illuminate: (canvas) ->
       center = self.centeredBounds()
 
@@ -209,7 +211,7 @@ Moogle = (I) ->
         canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2.25)
     
     after:
-      draw: (canvas, hud) ->
+      draw: (canvas) ->
         center = self.centeredBounds()
         if I.shielding
           canvas.withTransform Matrix.translation(center.x, center.y), (canvas) ->
@@ -219,8 +221,6 @@ Moogle = (I) ->
         beams.each (beam) ->
           canvas.strokeColor(I.color)
           canvas.drawLine(beam[0].x, beam[0].y, beam[1].x, beam[1].y, 2)
-          
-        drawHud hud
   
     before:
       update: ->
