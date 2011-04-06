@@ -8,10 +8,6 @@
     includedModules: []
     objects: []
 
-  hudCanvas = $("<canvas width=640 height=480 />").powerCanvas()
-
-  hudCanvas.font("bold 9pt consolas, 'Courier New', 'andale mono', 'lucida console', monospace")
-
   window.Engine = (I) ->
     I ||= {}
 
@@ -51,12 +47,9 @@
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
 
-        I.objects.invoke("draw", canvas, hudCanvas)
+        I.objects.invoke("draw", canvas)
 
       self.trigger "draw", canvas
-
-      hud = hudCanvas.element()
-      canvas.drawImage hud, 0, 0, hud.width, hud.height, 0, 0, hud.width, hud.height
 
       drawDeveloperOverlay(canvas) if paused
 
@@ -162,7 +155,7 @@
     self.attrAccessor "cameraTransform"
     self.include Bindable
 
-    defaultModules = ["Shadows", "SaveState"]
+    defaultModules = ["Shadows", "HUD", "SaveState"]
     modules = defaultModules.concat(I.includedModules)
     modules = modules.without(I.excludedModules)
 
