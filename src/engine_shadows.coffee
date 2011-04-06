@@ -8,7 +8,7 @@ Engine.Shadows = (I, self) ->
       # Fill with shadows
       shadowCanvas.fill("rgba(0, 0, 0, #{1 - I.ambientLight})")
 
-      # Etch out the light
+      # Etch out the light from each light source
       shadowCanvas.compositeOperation "destination-out"
       shadowCanvas.withTransform I.cameraTransform, (shadowCanvas) ->
         I.objects.each (object, i) ->
