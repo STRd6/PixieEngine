@@ -5,7 +5,6 @@
     backgroundColor: "#FFFFFF"
     cameraTransform: Matrix.IDENTITY
 
-  shadowCanvas = $("<canvas width=640 height=480 />").powerCanvas()
   hudCanvas = $("<canvas width=640 height=480 />").powerCanvas()
 
   hudCanvas.font("bold 9pt consolas, 'Courier New', 'andale mono', 'lucida console', monospace")
@@ -47,30 +46,13 @@
       canvas.fillText("Right click red boxes to edit properties", 440, 60)
 
     draw = ->
-      if I.ambientLight < 1
-        shadowContext = shadowCanvas.context()
-        shadowContext.globalCompositeOperation = "source-over"
-        shadowCanvas.clear()
-        # Fill with shadows
-        shadowCanvas.fill("rgba(0, 0, 0, #{1 - I.ambientLight})")
-  
-        # Etch out the light
-        shadowContext.globalCompositeOperation = "destination-out"
-        shadowCanvas.withTransform I.cameraTransform, (shadowCanvas) ->
-          objects.each (object, i) ->
-            if object.illuminate
-              shadowContext.globalAlpha = 1
-              object.illuminate(shadowCanvas)
-
       canvas.withTransform I.cameraTransform, (canvas) ->
         if I.backgroundColor
           canvas.fill(I.backgroundColor)
 
         objects.invoke("draw", canvas, hudCanvas)
-           
-      if I.ambientLight < 1
-        shadows = shadowCanvas.element()
-        canvas.drawImage(shadows, 0, 0, shadows.width, shadows.height, 0, 0, shadows.width, shadows.height)
+
+      self.trigger "draw", canvas
 
       hud = hudCanvas.element()
       canvas.drawImage hud, 0, 0, hud.width, hud.height, 0, 0, hud.width, hud.height
