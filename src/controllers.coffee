@@ -13,6 +13,14 @@ Controller = (actions) ->
     triggers.inject false, (down, action) ->
       down || keydown[actions[action]]
 
+gameControlData = {}
+keyActionNames = {
+  A: "JUMP"
+  B: "SHOOT"
+  C: "SHIELD"
+  D: "JOIN"
+}
+
 CONTROLLERS = []
 # Dvorak Keyboard layout controllers
 [{
@@ -79,5 +87,11 @@ CONTROLLERS = []
   C: "\\"
   D: "backspace"
 }].each (actions, i) ->
+  for action, key of actions
+    gameControlData["P#{i+1}: #{keyActionNames[action] || action}"] = key
+
   CONTROLLERS[i] = Controller(actions)
+
+# Export gameControlData to parent Environment
+parent.gameControlData = gameControlData
 
