@@ -14,7 +14,7 @@ block =
     x: 32 * i
     y: 32 * 14
   , block)
-    
+
 engine.add
   class: "Moogle"
   x: 320
@@ -24,21 +24,21 @@ levels = [level3, level4, level5, level6]
 
 engine.loadState levels.rand()
 
-PLAY_TO = 50
- 
+PLAY_TO = 20
+
 engine.start()
 
 engine.bind "update", ->
   playerInfo = {}
-  
+
   engine.eachObject (o) ->
     if o.I.controller? 
       playerInfo[o.I.controller] = o.I
-      
+
   # Winner?
   highestScore = 0
   winningPlayers = []
-  
+
   for id, info of playerInfo
     id = parseInt(id, 10)
 
@@ -47,13 +47,13 @@ engine.bind "update", ->
       winningPlayers = [id]
     else if playerInfo.score == highestScore
       winningPlayers.push[id]
-      
+
   if highestScore >= PLAY_TO
     if winningPlayers.length == 1
       alert "Player #{winningPlayers[0] + 1} Wins!"
     else
       alert "Tie Between Players #{winningPlayers.map((n)-> n + 1).join(', ')}"
-    
+
     engine.loadState levels.rand()
     return
 
@@ -91,9 +91,9 @@ $(document).mousedown (event) ->
     if event.which == 3
       if object = engine.objectAt(event.pageX, event.pageY)
         parent.editProperties(object.I)
-        
+
         objectToUpdate = object
-        
+
       console.log object
     else if event.which == 2 || keydown.shift
       engine.add $.extend(
@@ -104,7 +104,7 @@ $(document).mousedown (event) ->
 hotkeys =
   esc: ->
     developer = !developer
-  
+
     if developer
       engine.pause()
     else
