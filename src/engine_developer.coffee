@@ -27,7 +27,7 @@ developerMode = false
 objectToUpdate = null
 window.updateObjectProperties = (newProperties) ->
   if objectToUpdate
-    $.extend objectToUpdate, engine.construct(newProperties)
+    $.extend objectToUpdate, GameObject.construct(newProperties)
 
 # Unbind events on code reload
 if window.developerModeMousedown
@@ -49,10 +49,7 @@ window.developerModeMousedown = (event) ->
 
       console.log object
     else if event.which == 2 || keydown.shift
-      engine.add $.extend(
-        x: event.pageX.snap(32)
-        y: event.pageY.snap(32)
-      , block)
+      window.developerAddObject?(event)
 
 # Development Events
 $(document).mousedown window.developerModeMousedown
@@ -61,7 +58,7 @@ window.developerHotkeys =
   esc: ->
     developerMode = !developerMode
 
-    if developer
+    if developerMode
       engine.pause()
     else
       engine.play()
