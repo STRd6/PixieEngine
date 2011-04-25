@@ -22,4 +22,61 @@ Engine.Developer = (I, self) ->
 
   return {}
 
+developerMode = false
+
+objectToUpdate = null
+window.updateObjectProperties = (newProperties) ->
+  if objectToUpdate
+    $.extend objectToUpdate, engine.construct(newProperties)
+
+# Unbind events on code reload
+if window.developerModeMousedown
+  $(document).unbind(window.developerModeMousedown)
+
+if window.developerHotkeys
+  for key, fn of developerHotkeys
+    $(document).unbind "keydown", key, fn
+
+window.developerModeMousedown = (event) ->
+  if developerMode
+    console.log event.which
+
+    if event.which == 3
+      if object = engine.objectAt(event.pageX, event.pageY)
+        parent.editProperties(object.I)
+
+        objectToUpdate = object
+
+      console.log object
+    else if event.which == 2 || keydown.shift
+      engine.add $.extend(
+        x: event.pageX.snap(32)
+        y: event.pageY.snap(32)
+      , block)
+
+# Development Events
+$(document).mousedown window.developerModeMousedown
+
+window.developerHotkeys =
+  esc: ->
+    developerMode = !developerMode
+
+    if developer
+      engine.pause()
+    else
+      engine.play()
+  f3: ->
+    Local.set("level", engine.saveState())
+  f4: ->
+    engine.loadState(Local.get("level"))
+  f5: ->
+    engine.reload()
+
+for key, fn of window.developerHotkeys
+  window.developerHotkeys[key] = (event) ->
+    event.preventDefault()
+    fn()
+
+for key, fn of window.developerHotkeys
+  $(document).bind "keydown", key, fn
 
